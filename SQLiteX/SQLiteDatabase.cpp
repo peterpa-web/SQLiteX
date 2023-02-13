@@ -1,0 +1,143 @@
+#include "pch.h"
+#include "SQLiteDatabase.h"
+
+CStringW FromUtf8(LPCSTR pszUtf8)
+{
+	if (pszUtf8 == nullptr)
+		return CStringW();
+	size_t nLen = strlen(pszUtf8);
+	if (nLen == 0)
+		return CStringW();
+
+	CStringW str;
+	LPWSTR pBuf = str.GetBuffer(nLen + 1);
+	int nNewLen = MultiByteToWideChar(CP_UTF8, 0, pszUtf8, nLen, pBuf, nLen + 1);
+	str.ReleaseBuffer(nNewLen);
+	if (nNewLen == 0)
+		throw new CSQLiteException(L"CStringUtil::FromUtf8 failed");
+	return str;
+}
+
+CStringA ToUtf8(LPCWSTR pszUtf16)
+{
+	if (pszUtf16 == nullptr)
+		return CStringA();
+	size_t nLen = wcslen(pszUtf16);
+	if (nLen == 0)
+		return CStringA();
+
+	CStringA str;
+	int nLen8 = WideCharToMultiByte(CP_UTF8, 0, pszUtf16, -1, NULL, 0, NULL, NULL);
+	LPSTR pBuf = str.GetBuffer(nLen8);
+	int nNewLen = WideCharToMultiByte(CP_UTF8, 0, pszUtf16, nLen, pBuf, nLen8, NULL, NULL);
+	str.ReleaseBuffer(nNewLen);
+	if (nNewLen == 0)
+		throw new CSQLiteException(L"CStringUtil::ToUtf8 failed");
+	return str;
+}
+
+CSQLiteDatabase::~CSQLiteDatabase()
+{
+	Close();
+}
+
+bool CSQLiteDatabase::Open(LPCWSTR lpszFilePath)
+{
+//	CStringA s8 = ToUtf8(L"ƒ÷‹‰ˆ¸ﬂÄ\n");
+//	CString s16 = FromUtf8(s8);
+
+	m_strFilePath = lpszFilePath;
+	CStringA utf8FilePath = ToUtf8(lpszFilePath);
+	int iResult = sqlite3_open(utf8FilePath, &m_pdb3);
+	if (iResult == 0)
+		return true;
+
+	m_pdb3 = nullptr;
+	return false;
+}
+
+void CSQLiteDatabase::Close()
+{
+	if (m_pdb3 == nullptr)
+		return;
+
+	int iResult = sqlite3_close(m_pdb3);
+	if (iResult != 0)
+		TRACE1("sqlite3_close() ret=%d\n", iResult);
+	m_pdb3 = nullptr;
+}
+
+CString CSQLiteDatabase::GetImportPath() const
+{
+	int p = m_strFilePath.ReverseFind('\\');
+	return m_strFilePath.Left(p);
+}
+
+
+void CSQLiteDatabase::ExecuteSQL(const CStringA& utf8Sql)
+{
+	ASSERT(IsOpen());
+	char* szErr = nullptr;
+	int nRc = sqlite3_exec(m_pdb3, utf8Sql, nullptr, nullptr, &szErr);
+	if (nRc != SQLITE_OK)
+		throw new CSQLiteException(szErr);
+}
+
+long CSQLiteDatabase::GetLastRowId()
+{
+	return (long)sqlite3_last_insert_rowid(GetHandle());
+}
+
+bool CSQLiteDatabase::BeginTrans()
+{
+	throw new CSQLiteException("BeginTrans() to be implemented");
+	return false;
+}
+
+void CSQLiteDatabase::CommitTrans()
+{
+	throw new CSQLiteException("CommitTrans() to be implemented");
+}
+
+void CSQLiteDatabase::Rollback()
+{
+	throw new CSQLiteException("Rollback() to be implemented");
+}
+
+CStringW CSQLiteDatabase::GetLastError()
+{
+	return FromUtf8(sqlite3_errmsg(m_pdb3));
+}
+
+
+//#################################################
+
+IMPLEMENT_DYNAMIC(CSQLiteException, CException)
+
+CSQLiteException::CSQLiteException(LPCTSTR lpszErrorText, BOOL bAutoDelete) : CException(bAutoDelete)
+{
+	m_strErrorText = lpszErrorText;
+	TRACE1("CSQLiteException: %s\n", m_strErrorText);
+}
+
+CSQLiteException::CSQLiteException(LPCSTR lpszErrorText, BOOL bAutoDelete) : CException(bAutoDelete)
+{
+	m_strErrorText = FromUtf8(lpszErrorText);
+	TRACE1("CSQLiteException: %s\n", m_strErrorText);
+}
+
+BOOL CSQLiteException::GetErrorMessage(
+	LPTSTR lpszError, UINT nMaxError,
+	PUINT pnHelpContext) const
+{
+	ASSERT(lpszError != NULL && AfxIsValidString(lpszError, nMaxError));
+	if (pnHelpContext != NULL)
+		*pnHelpContext = 0;
+
+	if (nMaxError == 0 || lpszError == NULL)
+		return FALSE;
+
+	LPTSTR dummy = lstrcpyn(lpszError, m_strErrorText, nMaxError);
+	return TRUE;
+}
+
