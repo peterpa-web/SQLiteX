@@ -90,18 +90,18 @@ long CSQLiteDatabase::GetLastRowId()
 
 bool CSQLiteDatabase::BeginTrans()
 {
-	throw new CSQLiteException("BeginTrans() to be implemented");
-	return false;
+	ExecuteSQL(CStringA("BEGIN;"));
+	return true;
 }
 
 void CSQLiteDatabase::CommitTrans()
 {
-	throw new CSQLiteException("CommitTrans() to be implemented");
+	ExecuteSQL(CStringA("COMMIT;"));
 }
 
 void CSQLiteDatabase::Rollback()
 {
-	throw new CSQLiteException("Rollback() to be implemented");
+	ExecuteSQL(CStringA("ROLLBACK;"));
 }
 
 CStringW CSQLiteDatabase::GetLastError()

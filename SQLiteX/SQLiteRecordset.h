@@ -1,4 +1,5 @@
 #pragma once
+#include "Euro.h"
 #include "SQLiteDatabase.h"
 
 class CSQLiteRecordset
@@ -30,14 +31,15 @@ public:
 
 	CString m_strFilter;
 	CString m_strSort;
+	CString m_strConstraints;
 
-	enum OpenType	// dummy, for compatibility only
+	enum OpenType
 	{
-		dynaset,        // uses SQLExtendedFetch, keyset driven cursor
+//		dynaset,        // uses SQLExtendedFetch, keyset driven cursor
 		snapshot,       // uses SQLExtendedFetch, static cursor
-		forwardOnly,    // uses SQLFetch
-		dynamic,        // uses SQLExtendedFetch, dynamic cursor
-		readOnly
+//		forwardOnly,    // uses SQLFetch
+//		dynamic,        // uses SQLExtendedFetch, dynamic cursor
+		readOnly	// is a view, no table
 	};
 
 protected:
@@ -96,6 +98,7 @@ protected:
 	void RFX_Text(CFieldExchange* pFX, LPCTSTR szName, CStringW& value, DWORD dwFlags = 0);
 	void RFX_Double(CFieldExchange* pFX, LPCTSTR szName, double& value, DWORD dwFlags = 0);
 	void RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CTime& value, DWORD dwFlags = 0);
+	void RFX_Euro(CFieldExchange* pFX, LPCTSTR szName, CEuro& value, DWORD dwFlags = 0);
 
 	CSQLiteDatabase* m_pDB;
 	sqlite3_stmt* m_pStmt = nullptr;

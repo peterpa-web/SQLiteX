@@ -13,6 +13,10 @@
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
+# please download the following original files from sqlite.org
+sqlite3.h
+sqlite3.c
+
 # Mono auto generated files
 mono_crash.*
 

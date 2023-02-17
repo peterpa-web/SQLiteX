@@ -135,7 +135,10 @@ void CSQLiteRecordset::Create()
 	DoFieldExchange(&fx);
 
 	utf8Sql += utf8Table;
-	utf8Sql += '(' + fx.m_strSQL + ");";
+	utf8Sql += '(' + fx.m_strSQL;
+	if (!m_strConstraints.IsEmpty())
+		utf8Sql += ',' + ToUtf8(m_strConstraints);
+	utf8Sql += ");";
 	try
 	{
 		m_pDB->ExecuteSQL(utf8Sql);
@@ -495,6 +498,14 @@ void CSQLiteRecordset::RFX_Text(CFieldExchange* pFX, LPCTSTR szName, CStringW& v
 	case FX_Task::dataClear:
 		value.Empty();
 		break;
+	case FX_Task::dataImport:
+	{
+		CString strData = pFX->NextImportField();
+		if (strData[0] != '"')
+			strData = '"' + strData + '"';
+		pFX->AddSQL(strData);
+		break;
+	}
 	case FX_Task::dataRead:
 		value = FromUtf8((LPCSTR)sqlite3_column_text(m_pStmt, pFX->m_nField++));
 		break;
@@ -602,6 +613,26 @@ void CSQLiteRecordset::RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CTime& valu
 	}
 	default:
 		RFX_Gen(pFX, szName, SQLITE_INTEGER, dwFlags);
+		break;
+	}
+}
+
+void CSQLiteRecordset::RFX_Euro(CFieldExchange* pFX, LPCTSTR szName, CEuro& value, DWORD dwFlags)
+{
+	switch (pFX->m_task)
+	{
+	case FX_Task::dataImport:
+	{
+		CString strData = pFX->NextImportField();
+		CEuro e;
+		e.FromString(CStringA(strData));
+		CStringA str;
+		str.Format("%d", e.GetCentsRef());
+		pFX->AddSQL(str);
+	}
+	break;
+	default:
+		RFX_Long(pFX, szName, value.GetCentsRef(), dwFlags);
 		break;
 	}
 }

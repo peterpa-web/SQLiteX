@@ -30,6 +30,9 @@
     <ClInclude Include="SQLiteRecordset.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="Euro.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -42,6 +45,9 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="SQLiteRecordset.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="Euro.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>
