@@ -43,9 +43,6 @@ CSQLiteDatabase::~CSQLiteDatabase()
 
 bool CSQLiteDatabase::Open(LPCWSTR lpszFilePath)
 {
-//	CStringA s8 = ToUtf8(L"ƒ÷‹‰ˆ¸ﬂÄ\n");
-//	CString s16 = FromUtf8(s8);
-
 	m_strFilePath = lpszFilePath;
 	CStringA utf8FilePath = ToUtf8(lpszFilePath);
 	int iResult = sqlite3_open(utf8FilePath, &m_pdb3);
@@ -63,7 +60,7 @@ void CSQLiteDatabase::Close()
 
 	int iResult = sqlite3_close(m_pdb3);
 	if (iResult != 0)
-		TRACE1("sqlite3_close() ret=%d\n", iResult);
+		TRACE2("sqlite3_close() ret=%d %s\n", iResult, GetLastError());
 	m_pdb3 = nullptr;
 }
 
@@ -78,6 +75,7 @@ void CSQLiteDatabase::ExecuteSQL(const CStringA& utf8Sql)
 {
 	ASSERT(IsOpen());
 	char* szErr = nullptr;
+	TRACE1("ExecSQL %S\n", utf8Sql);
 	int nRc = sqlite3_exec(m_pdb3, utf8Sql, nullptr, nullptr, &szErr);
 	if (nRc != SQLITE_OK)
 		throw new CSQLiteException(szErr);

@@ -16,7 +16,10 @@ CSQLiteRecordset::~CSQLiteRecordset()
 bool CSQLiteRecordset::Open(LPCWSTR lpszSQL)
 {
 	if (IsOpen())
+	{
+		ASSERT(FALSE);
 		return false;
+	}
 
 	if (m_updState != UpdState::done)
 		throw new CSQLiteException(GetDefaultSQL() + ": Open() bad updState");
@@ -72,10 +75,7 @@ bool CSQLiteRecordset::OpenRow(long nRow)
 	CString strSQL;
 	strSQL.Format(L"SELECT * FROM %s WHERE %s = %d;", (LPCTSTR)GetDefaultSQL(), 
 		(LPCWSTR)FromUtf8(fx.m_strSQL), nRow);
-	if (!Open(strSQL))
-		return false;
-	Close();
-	return true;
+	return Open(strSQL);
 }
 
 void CSQLiteRecordset::Close()
@@ -652,9 +652,14 @@ CStringW CSQLiteRecordset::CFieldExchange::NextImportField()
 	if (m_strImportLine[s] == '"')
 		strLim = _T("\";");
 	int p = m_strImportLine.Find(strLim, s);
-	m_nStartField = p + strLim.GetLength();
 	if (p > 0)
+	{
+		m_nStartField = p + strLim.GetLength();
 		return m_strImportLine.Mid(s, p - s + strLim.GetLength() - 1);
+	}
 	else
+	{
+		m_nStartField = m_strImportLine.GetLength();
 		return m_strImportLine.Mid(s);
+	}
 }
