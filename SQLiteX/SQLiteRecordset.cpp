@@ -233,6 +233,8 @@ void CSQLiteRecordset::MoveLast()
 
 void CSQLiteRecordset::Edit()
 {
+	if (m_updState == UpdState::edit)
+		return;
 	if (m_nDefaultType == readOnly)
 		throw new CSQLiteException(GetDefaultSQL() + ": readOnly");
 	if (m_updState != UpdState::done)
@@ -242,6 +244,8 @@ void CSQLiteRecordset::Edit()
 
 void CSQLiteRecordset::AddNew()
 {
+	if (m_updState == UpdState::addNew)
+		return;
 	if (m_nDefaultType == readOnly)
 		throw new CSQLiteException(GetDefaultSQL() + ": readOnly");
 	if (m_updState != UpdState::done)
@@ -253,10 +257,10 @@ void CSQLiteRecordset::AddNew()
 
 void CSQLiteRecordset::Update()
 {
+	if (m_updState == UpdState::done)
+		throw new CSQLiteException(GetDefaultSQL() + ": Update() missing AddNew() or Edit()");
 	if (m_nDefaultType == readOnly)
 		throw new CSQLiteException(GetDefaultSQL() + ": readOnly");
-	if (m_updState == UpdState::done)
-		throw new CSQLiteException(GetDefaultSQL() + ": Update() bad updState");
 	if (m_updState == UpdState::addNew)
 	{
 		CFieldExchange fx1(FX_Task::sqlInsert);
