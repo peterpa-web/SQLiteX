@@ -14,8 +14,8 @@
 *.userprefs
 
 # please download the following original files from sqlite.org
-sqlite3.h
-sqlite3.c
+SQLiteX/sqlite3.h
+SQLiteX/sqlite3.c
 
 # Mono auto generated files
 mono_crash.*
@@ -365,3 +365,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/SQLiteX/sqlite3.h
+/SQLiteX/sqlite3.c
