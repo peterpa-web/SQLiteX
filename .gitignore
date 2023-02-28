@@ -13,10 +13,6 @@
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
-# please download the following original files from sqlite.org
-SQLiteX/sqlite3.h
-SQLiteX/sqlite3.c
-
 # Mono auto generated files
 mono_crash.*
 
@@ -365,5 +361,8 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# custom excludes:
 /SQLiteX/sqlite3.h
 /SQLiteX/sqlite3.c
+/SampleDlgApp/data/test.db3
