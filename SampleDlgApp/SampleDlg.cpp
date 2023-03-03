@@ -296,10 +296,10 @@ void CSampleDlg::OnBnClickedImport()
 		FillListEmpl();
 		FillListEmplFull();
 	}
-	catch (CSQLiteException* pe)
+	catch (CSQLiteException*)
 	{
 		m_db.Rollback();
-		throw pe;
+		throw;
 	}
 	m_db.CommitTrans();
 }

@@ -186,7 +186,7 @@ void CSQLiteRecordset::ImportTxt()
 			CString str;
 			str.Format(_T(" (%d)"), nLine);
 			pe->AddContext(GetDefaultSQL() + str);
-			throw pe;
+			throw;
 		}
 	}
 }
@@ -279,7 +279,7 @@ void CSQLiteRecordset::Update()
 		catch (CSQLiteException* pe)
 		{
 			pe->AddContext(GetDefaultSQL());
-			throw pe;
+			throw;
 		}
 		CFieldExchange fx3(FX_Task::dataRowId);
 		fx3.m_nRowId = m_pDB->GetLastRowId();
@@ -309,7 +309,7 @@ void CSQLiteRecordset::Update()
 		catch (CSQLiteException* pe)
 		{
 			pe->AddContext(GetDefaultSQL());
-			throw pe;
+			throw;
 		}
 		m_updState = UpdState::done;
 	}
@@ -339,7 +339,7 @@ void CSQLiteRecordset::Delete()
 	catch (CSQLiteException* pe)
 	{
 		pe->AddContext(GetDefaultSQL());
-		throw pe;
+		throw;
 	}
 }
 

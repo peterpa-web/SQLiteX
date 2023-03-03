@@ -74,11 +74,10 @@ CString CSQLiteDatabase::GetImportPath() const
 void CSQLiteDatabase::ExecuteSQL(const CStringA& utf8Sql)
 {
 	ASSERT(IsOpen());
-	char* szErr = nullptr;
 	TRACE1("ExecSQL %S\n", utf8Sql);
-	int nRc = sqlite3_exec(m_pdb3, utf8Sql, nullptr, nullptr, &szErr);
+	int nRc = sqlite3_exec(m_pdb3, utf8Sql, nullptr, nullptr, nullptr);
 	if (nRc != SQLITE_OK)
-		throw new CSQLiteException(szErr);
+		throw new CSQLiteException(GetLastError());
 }
 
 long CSQLiteDatabase::GetLastRowId()
@@ -104,7 +103,11 @@ void CSQLiteDatabase::Rollback()
 
 CStringW CSQLiteDatabase::GetLastError()
 {
-	return FromUtf8(sqlite3_errmsg(m_pdb3));
+	CStringW str((LPCWSTR)sqlite3_errmsg16(m_pdb3));
+	int nOffs = sqlite3_error_offset(m_pdb3);
+	if (nOffs >= 0)
+		str.Format(L"%s (offs=%d)", (LPCWSTR)str, nOffs);
+	return str;
 }
 
 
