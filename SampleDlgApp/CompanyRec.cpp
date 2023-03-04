@@ -15,5 +15,5 @@ CString CCompanyRec::GetDefaultSQL()
 void CCompanyRec::DoFieldExchange(CFieldExchange* pFX)
 {
 	RFX_Long(pFX, _T("[CompID]"), m_CompID, FX_PK);
-	RFX_Text(pFX, _T("[CompName]"), m_CompName);
+	RFX_Text(pFX, _T("[CompName]"), m_CompName, FX_NN);
 }

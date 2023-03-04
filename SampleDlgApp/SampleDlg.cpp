@@ -375,12 +375,18 @@ void CSampleDlg::OnBnClickedAddEmpl()
 	CStringA strData(dlg.m_strBirthday);
 	int p = 0;
 	CStringA s = strData.Tokenize(".", p);
-	int d = atoi(s);
-	s = strData.Tokenize(".", p);
-	int m = atoi(s);
-	s = strData.Tokenize(" ", p);
-	int y = atoi(s);
-	er.m_Birthday = CTime(y, m, d, 0, 0, 0);
+	if (p >= 0)
+	{
+		int d = atoi(s);
+		s = strData.Tokenize(".", p);
+		if (p >= 0)
+		{
+			int m = atoi(s);
+			s = strData.Tokenize(" ", p);
+			int y = atoi(s);
+			er.m_Birthday = CTime(y, m, d, 0, 0, 0);
+		}
+	}
 	er.m_CompID = dlg.m_nCompId;
 	er.m_Salary = dlg.m_dSalary;
 	er.Update();

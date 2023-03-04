@@ -463,15 +463,19 @@ void CSQLiteRecordset::RFX_Long(CFieldExchange* pFX, LPCTSTR szName, long& value
 		if ((dwFlags & FX_PK) == 0)
 		{
 			CStringA s;
-			s.Format("%S=%d", szName, value);
+			if (value != 0 || (dwFlags & FX_NN) != 0)
+				s.Format("%S=%d", szName, value);
+			else
+				s.Format("%S=NULL", szName);
 			pFX->AddSQL(s);
 		}
 		break;
 	case FX_Task::dataWrite:
 		if ((dwFlags & FX_PK) == 0)
 		{
-			CStringA s;
-			s.Format("%d", value);
+			CStringA s("NULL");
+			if (value != 0 || (dwFlags & FX_NN) != 0)
+				s.Format("%d", value);
 			pFX->AddSQL(s);
 		}
 		break;
@@ -516,12 +520,18 @@ void CSQLiteRecordset::RFX_Text(CFieldExchange* pFX, LPCTSTR szName, CStringW& v
 	case FX_Task::dataUpdate:
 	{
 		CStringA s = ToUtf8(szName) + '=';
-		pFX->AddSQL(s + '"' + ToUtf8(value) + '"');
+		if (!value.IsEmpty() || (dwFlags & FX_NN) != 0)
+			pFX->AddSQL(s + '"' + ToUtf8(value) + '"');
+		else
+			pFX->AddSQL(s + "NULL");
 		break;
 	}
 	case FX_Task::dataWrite:
 	{
-		pFX->AddSQL('"' + ToUtf8(value) + '"');
+		if (!value.IsEmpty() || (dwFlags & FX_NN) != 0)
+			pFX->AddSQL('"' + ToUtf8(value) + '"');
+		else
+			pFX->AddSQL("NULL");
 		break;
 	}
 	default:
@@ -543,14 +553,18 @@ void CSQLiteRecordset::RFX_Double(CFieldExchange* pFX, LPCTSTR szName, double& v
 	case FX_Task::dataUpdate:
 	{
 		CStringA s;
-		s.Format("%S=%f", szName, value);
+		if (value != 0.0 || (dwFlags & FX_NN) != 0)
+			s.Format("%S=%f", szName, value);
+		else
+			s.Format("%S=NULL", szName);
 		pFX->AddSQL(s);
 		break;
 	}
 	case FX_Task::dataWrite:
 	{
-		CStringA s;
-		s.Format("%f", value);
+		CStringA s("NULL");
+		if (value != 0 || (dwFlags & FX_NN) != 0)
+			s.Format("%f", value);
 		pFX->AddSQL(s);
 		break;
 	}
@@ -577,25 +591,38 @@ void CSQLiteRecordset::RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CTime& valu
 	case FX_Task::dataRead:
 	{
 		int t = sqlite3_column_int(m_pStmt, pFX->m_nField++);
-		int d = t % 100;
-		int m = (t / 100) % 100;
-		int y = t / 10000;
-		value = CTime(y, m, d, 0, 0, 0);
+		if (t == 0)
+			value = 0;
+		else
+		{
+			int d = t % 100;
+			int m = (t / 100) % 100;
+			int y = t / 10000;
+			value = CTime(y, m, d, 0, 0, 0);
+		}
 		break;
 	}
 	case FX_Task::dataUpdate:
 	{
-		long l = (value.GetYear() * 100 + value.GetMonth()) * 100 + value.GetDay();
 		CStringA s;
-		s.Format("%S=%d", szName, l);
+		if (value == 0 )
+			s.Format("%S=NULL", szName);
+		else
+		{
+			long l = (value.GetYear() * 100 + value.GetMonth()) * 100 + value.GetDay();
+			s.Format("%S=%d", szName, l);
+		}
 		pFX->AddSQL(s);
 		break;
 	}
 	case FX_Task::dataWrite:
 	{
-		long l = (value.GetYear() * 100 + value.GetMonth()) * 100 + value.GetDay();
-		CStringA s;
-		s.Format("%d", l);
+		CStringA s("NULL");
+		if (value != 0)
+		{
+			long l = (value.GetYear() * 100 + value.GetMonth()) * 100 + value.GetDay();
+			s.Format("%d", l);
+		}
 		pFX->AddSQL(s);
 		break;
 	}
@@ -643,6 +670,8 @@ void CSQLiteRecordset::RFX_Euro(CFieldExchange* pFX, LPCTSTR szName, CEuro& valu
 
 void CSQLiteRecordset::CFieldExchange::AddSQL(LPCSTR psz)
 {
+	if (*psz == 0)
+		return;
 	m_nField++;
 	if (!m_strSQL.IsEmpty())
 		m_strSQL += ',';
