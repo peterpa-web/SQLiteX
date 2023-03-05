@@ -20,12 +20,13 @@
 #define IDC_DEL_COMP                    1005
 #define IDC_EDIT_COMP_ID                1005
 #define IDC_LIST_EMPL                   1006
-#define IDC_EDIT_COMP_ID2               1006
 #define IDC_EDIT_SALARY                 1006
 #define IDC_ADD_EMPL                    1007
 #define IDC_EDIT_EMPL                   1008
 #define IDC_DEL_EMPL                    1009
 #define IDC_LIST_EMPL_FULL              1010
+#define IDC_IMPORT2                     1011
+#define IDC_EXPORT                      1011
 
 // Next default values for new objects
 // 

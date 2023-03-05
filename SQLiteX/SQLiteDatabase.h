@@ -21,11 +21,16 @@ public:
 	void CommitTrans();
 	void Rollback();
 	CStringW GetLastError();
-	CString GetImportPath() const;
+	CString GetImportPath() const { return m_strImportPath; }
+	void SetImportPath(const CString& strPath) { m_strImportPath = strPath; }	// see default at Open
+	CString GetExportPath() const { return m_strExportPath; }
+	void SetExportPath(const CString& strPath) { m_strExportPath = strPath; }	// see default at Open
 
 private:
 	sqlite3* m_pdb3 = nullptr;
 	CString m_strFilePath;
+	CString m_strImportPath;
+	CString m_strExportPath;
 };
 
 
