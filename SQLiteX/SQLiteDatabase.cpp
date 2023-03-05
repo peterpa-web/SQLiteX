@@ -44,6 +44,9 @@ CSQLiteDatabase::~CSQLiteDatabase()
 bool CSQLiteDatabase::Open(LPCWSTR lpszFilePath)
 {
 	m_strFilePath = lpszFilePath;
+	int p = m_strFilePath.ReverseFind('\\');
+	m_strImportPath = m_strExportPath = m_strFilePath.Left(p);
+
 	CStringA utf8FilePath = ToUtf8(lpszFilePath);
 	int iResult = sqlite3_open(utf8FilePath, &m_pdb3);
 	if (iResult == 0)
@@ -63,13 +66,6 @@ void CSQLiteDatabase::Close()
 		TRACE2("sqlite3_close() ret=%d %s\n", iResult, GetLastError());
 	m_pdb3 = nullptr;
 }
-
-CString CSQLiteDatabase::GetImportPath() const
-{
-	int p = m_strFilePath.ReverseFind('\\');
-	return m_strFilePath.Left(p);
-}
-
 
 void CSQLiteDatabase::ExecuteSQL(const CStringA& utf8Sql)
 {

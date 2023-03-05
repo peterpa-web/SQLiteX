@@ -2,6 +2,11 @@
 #include "Euro.h"
 #include "SQLiteDatabase.h"
 
+enum class TxtFmt
+{
+	standard, utf8Native, isoGerman, utf8MarkGerman
+};
+
 class CSQLiteRecordset
 {
 public:
@@ -12,15 +17,12 @@ public:
 	virtual void Close();
 	bool Requery();
 	bool IsOpen() const;
-//	bool IsBOF();								// Begin Of File
 	bool IsEOF() const { return m_bEOF; }		// End Of File
 	bool IsDeleted() const;
 	void Create();
-	void ImportTxt();
+	void Import(TxtFmt fmt = TxtFmt::standard, LPCTSTR pszExt = _T("txt"), char cSep = ';');
+	void Export(TxtFmt fmt, LPCTSTR pszExt = _T("txt"), char cSep = ';');		// expects Open()
 	void MoveNext();
-//	void MovePrev();
-//	void MoveFirst();
-//	void MoveLast();
 	void Edit();
 	void AddNew();
 	void Update();
@@ -51,7 +53,7 @@ protected:
 	enum class FX_Task
 	{
 		none, sqlCreate, sqlInsert, sqlSelect, sqlKey, 
-		dataClear, dataRead, dataWrite, dataIdent, dataImport, dataUpdate, dataRowId
+		dataClear, dataRead, dataWrite, dataIdent, dataImport, dataExport, dataUpdate, dataRowId
 	};
 
 	enum FX_Flags	// for create table
@@ -77,17 +79,19 @@ protected:
 
 		CFieldExchange(FX_Task t) : m_task(t) {}
 		void SetFieldType(UINT nFieldType) { m_nFieldType = nFieldType; }
-		void AddSQL(LPCSTR psz);
+		void AddSQL(LPCSTR psz, char cSep = 0);
 		void AddSQL(LPCWSTR psz) { AddSQL(ToUtf8(psz)); }
-		CStringW NextImportField();
+		CStringA NextImportField();
 
 		FX_Task m_task;
 		UINT m_nFieldType = noFieldType;
 		int m_nField = 0;
-		CStringA m_strSQL;
-		CStringW m_strImportLine;
+		char m_cSQLSep = ',';
+		CStringA m_utf8SQL;
+		CStringA m_strImportLine;
 		int m_nStartField = 0;	// position in import line
 		long m_nRowId = 0;
+		TxtFmt m_fmt = TxtFmt::standard;
 	};
 
 	virtual CString GetDefaultSQL() = 0;		// Default SQL for Recordset -> table name
@@ -98,6 +102,8 @@ protected:
 	void RFX_Text(CFieldExchange* pFX, LPCTSTR szName, CStringW& value, DWORD dwFlags = 0);
 	void RFX_Double(CFieldExchange* pFX, LPCTSTR szName, double& value, DWORD dwFlags = 0);
 	void RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CTime& value, DWORD dwFlags = 0);
+//	void RFX_Time(CFieldExchange* pFX, LPCTSTR szName, CTime& value, DWORD dwFlags = 0);
+//	void RFX_DateTime(CFieldExchange* pFX, LPCTSTR szName, CTime& value, DWORD dwFlags = 0);
 	void RFX_Euro(CFieldExchange* pFX, LPCTSTR szName, CEuro& value, DWORD dwFlags = 0);
 
 	CSQLiteDatabase* m_pDB;
@@ -110,6 +116,6 @@ protected:
 
 private:
 	void RFX_Gen(CFieldExchange* pFX, LPCTSTR szName, int nType, DWORD dwFlags);
-
+	BOOL ReadStringA(CStdioFile& f, CStringA& rString);
 };
 

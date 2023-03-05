@@ -60,6 +60,7 @@ CSampleDlg::CSampleDlg(CWnd* pParent /*=nullptr*/)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_strDataDir = _T("..\\SampleDlgApp\\data");	// containing test.db3 and import files
+	m_strExpDir = _T("..\\SampleDlgApp\\exp");		// containing export files
 }
 
 void CSampleDlg::DoDataExchange(CDataExchange* pDX)
@@ -76,6 +77,7 @@ BEGIN_MESSAGE_MAP(CSampleDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_CREATE, &CSampleDlg::OnBnClickedCreate)
 	ON_BN_CLICKED(IDC_IMPORT, &CSampleDlg::OnBnClickedImport)
+	ON_BN_CLICKED(IDC_EXPORT, &CSampleDlg::OnBnClickedExport)
 	ON_BN_CLICKED(IDC_ADD_COMP, &CSampleDlg::OnBnClickedAddComp)
 	ON_BN_CLICKED(IDC_EDIT_COMP, &CSampleDlg::OnBnClickedEditComp)
 	ON_BN_CLICKED(IDC_DEL_COMP, &CSampleDlg::OnBnClickedDelComp)
@@ -288,11 +290,11 @@ void CSampleDlg::OnBnClickedImport()
 	try
 	{
 		CCompanyRec c(&m_db);
-		c.ImportTxt();
+		c.Import();
 		FillListComp();
 
 		CEmployeRec e(&m_db);
-		e.ImportTxt();
+		e.Import();
 		FillListEmpl();
 		FillListEmplFull();
 	}
@@ -302,6 +304,21 @@ void CSampleDlg::OnBnClickedImport()
 		throw;
 	}
 	m_db.CommitTrans();
+}
+
+
+void CSampleDlg::OnBnClickedExport()
+{
+	CreateDirectory(m_strExpDir, nullptr);
+	m_db.SetExportPath(m_strExpDir);
+
+	CCompanyRec c(&m_db);
+	c.Open();
+	c.Export(TxtFmt::utf8MarkGerman);
+
+	CEmployeRec e(&m_db);
+	e.Open();
+	e.Export(TxtFmt::utf8MarkGerman);
 }
 
 

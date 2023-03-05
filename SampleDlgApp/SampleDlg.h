@@ -44,10 +44,12 @@ public:
 	CListCtrl m_listEmpl;
 	CListCtrl m_listEmplFull;
 	CString m_strDataDir;
+	CString m_strExpDir;
 	CString m_strDbPath;
 
 	afx_msg void OnBnClickedCreate();
 	afx_msg void OnBnClickedImport();
+	afx_msg void OnBnClickedExport();
 	afx_msg void OnBnClickedAddComp();
 	afx_msg void OnBnClickedEditComp();
 	afx_msg void OnBnClickedDelComp();

@@ -366,3 +366,4 @@ FodyWeavers.xsd
 /SQLiteX/sqlite3.h
 /SQLiteX/sqlite3.c
 /SampleDlgApp/data/test.db3
+/SampleDlgApp/exp/
