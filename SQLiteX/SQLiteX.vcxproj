@@ -147,6 +147,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="DateLong.h" />
     <ClInclude Include="Euro.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
@@ -155,6 +156,7 @@
     <ClInclude Include="SQLiteRecordset.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DateLong.cpp" />
     <ClCompile Include="Euro.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

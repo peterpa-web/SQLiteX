@@ -588,7 +588,8 @@ void CSQLiteRecordset::RFX_Text(CFieldExchange* pFX, LPCTSTR szName, CStringW& v
 		CStringA strData = pFX->NextImportField();
 		if (strData[0] != '"')
 			strData = '"' + strData + '"';
-		if (pFX->m_fmt == TxtFmt::standard || pFX->m_fmt == TxtFmt::isoGerman)
+		if ((pFX->m_fmt == TxtFmt::standard && strData.FindOneOf("ÄÖÜäöüß") >= 0) ||
+			pFX->m_fmt == TxtFmt::isoGerman)
 		{
 			CStringW str(strData);
 			strData = ToUtf8(str);
@@ -597,7 +598,7 @@ void CSQLiteRecordset::RFX_Text(CFieldExchange* pFX, LPCTSTR szName, CStringW& v
 		break;
 	}
 	case FX_Task::dataRead:
-		value = FromUtf8((LPCSTR)sqlite3_column_text(m_pStmt, pFX->m_nField++));
+		value = (LPCWSTR)sqlite3_column_text16(m_pStmt, pFX->m_nField++);
 		break;
 	case FX_Task::dataUpdate:
 	{
@@ -617,7 +618,6 @@ void CSQLiteRecordset::RFX_Text(CFieldExchange* pFX, LPCTSTR szName, CStringW& v
 				pFX->AddSQL('"' + CStringA(value) + '"');
 			else
 				pFX->AddSQL('"' + ToUtf8(value) + '"');
-
 		}
 		else
 			pFX->AddSQL("NULL");
@@ -673,6 +673,7 @@ void CSQLiteRecordset::RFX_Double(CFieldExchange* pFX, LPCTSTR szName, double& v
 	}
 }
 
+/*
 void CSQLiteRecordset::RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CTime& value, DWORD dwFlags)
 {
 	switch (pFX->m_task)
@@ -717,7 +718,9 @@ void CSQLiteRecordset::RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CTime& valu
 				long l = (value.GetYear() * 100 + value.GetMonth()) * 100 + value.GetDay();
 				s.Format("%d", l);
 			}
-			else
+			else if (pFX->m_fmt == TxtFmt::utf8International)
+				s = value.Format("%Y-%m-%d");
+			else	// german
 				s = value.Format("%d.%m.%Y");
 		}
 		pFX->AddSQL(s);
@@ -737,23 +740,97 @@ void CSQLiteRecordset::RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CTime& valu
 	case FX_Task::dataImport:
 	{
 		// stored as int: YYYYMMDD
-		// import d.m.yyyy hh:mm:ss
+		// import d.m.yyyy hh:mm:ss or yyyy-mm-dd hh:mm:ss
 		CStringA strData = CStringA(pFX->NextImportField());
-		int p = 0;
-		CStringA s = strData.Tokenize(".", p);
-		if (p > 0)
+		CStringA s;
+		int p = strData.Find('.');
+		if (p > 0 && p < 3)
 		{
-			int d = atoi(s);
+			p = 0;
 			s = strData.Tokenize(".", p);
 			if (p > 0)
 			{
-				int m = atoi(s);
-				s = strData.Tokenize(" ", p);
+				int d = atoi(s);
+				s = strData.Tokenize(".", p);
+				if (p > 0)
+				{
+					int m = atoi(s);
+					s = strData.Tokenize(" ", p);
+					int y = atoi(s);
+					strData.Format("%4.4d%2.2d%2.2d", y, m, d);
+				}
+			}
+		}
+		else
+		{
+			p = 0;
+			s = strData.Tokenize("-", p);
+			if (p > 0)
+			{
 				int y = atoi(s);
-				strData.Format("%4.4d%2.2d%2.2d", y, m, d);
+				s = strData.Tokenize("-", p);
+				if (p > 0)
+				{
+					int m = atoi(s);
+					s = strData.Tokenize(" ", p);
+					int d = atoi(s);
+					strData.Format("%4.4d%2.2d%2.2d", y, m, d);
+				}
 			}
 		}
 		pFX->AddSQL(strData, ',');
+		break;
+	}
+	default:
+		RFX_Gen(pFX, szName, SQLITE_INTEGER, dwFlags);
+		break;
+	}
+}
+*/
+
+void CSQLiteRecordset::RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CDateLong& value, DWORD dwFlags)
+{
+	switch (pFX->m_task)
+	{
+	case FX_Task::dataClear:
+		value = 0;
+		break;
+	case FX_Task::dataRead:
+	{
+		int t = sqlite3_column_int(m_pStmt, pFX->m_nField++);
+		value = CDateLong(t);
+		break;
+	}
+	case FX_Task::dataUpdate:
+	{
+		CStringA s = szName;
+		s += '=' + value.ToSQL();
+		pFX->AddSQL(s);
+		break;
+	}
+	case FX_Task::dataExport:
+	{
+		CStringA s;
+		if (pFX->m_fmt == TxtFmt::utf8Native)
+			s = value.ToSQL();
+		else if (pFX->m_fmt == TxtFmt::utf8International)
+			s = value.ToStringInt();
+		else	// german
+			s = value.ToStringGer();
+		pFX->AddSQL(s);
+		break;
+	}
+	case FX_Task::dataWrite:
+	{
+		CStringA s = value.ToSQL();
+		pFX->AddSQL(s);
+		break;
+	}
+	case FX_Task::dataImport:
+	{
+		CStringA strData = CStringA(pFX->NextImportField());
+		value = CDateLong(strData);
+		pFX->AddSQL(value.ToSQL(), ',');
 		break;
 	}
 	default:
@@ -781,7 +858,16 @@ void CSQLiteRecordset::RFX_Euro(CFieldExchange* pFX, LPCTSTR szName, CEuro& valu
 		if (value.ToDouble() == 0.0)
 			pFX->AddSQL("NULL");
 		else
-			pFX->AddSQL(value.ToString());
+		{
+			CString s;
+			if (pFX->m_fmt == TxtFmt::utf8Native)
+				s.Format(_T("%d"), value.GetCentsRef());
+			else
+				s = value.ToString();
+			if (pFX->m_fmt == TxtFmt::utf8International)
+				s.Replace(',', '.');
+			pFX->AddSQL(s);
+		}
 		break;
 	}
 	default:
@@ -805,7 +891,7 @@ CStringA CSQLiteRecordset::CFieldExchange::NextImportField()
 	int s = m_nStartField;
 	CStringA strLim = m_cSQLSep;
 	if (m_strImportLine[s] == '"')
-		strLim = _T("\"") + m_cSQLSep;
+		strLim = _T("\"") + CStringA(m_cSQLSep);
 	int p = m_strImportLine.Find(strLim, s);
 	if (p > 0)
 	{

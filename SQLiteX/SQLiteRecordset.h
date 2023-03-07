@@ -1,10 +1,15 @@
 #pragma once
 #include "Euro.h"
+#include "DateLong.h"
 #include "SQLiteDatabase.h"
 
 enum class TxtFmt
 {
-	standard, utf8Native, isoGerman, utf8MarkGerman
+	standard,			// import only: auto detect format
+	utf8Native,			// unformatted table data
+	utf8International,	// international time and number format
+	isoGerman,			// german time and number format with ISO encoding
+	utf8MarkGerman		// german time and number format with UTF8 BOM encoding
 };
 
 class CSQLiteRecordset
@@ -101,7 +106,8 @@ protected:
 //	void RFX_Int(CFieldExchange* pFX, LPCTSTR szName, int& value, DWORD dwFlags = 0);
 	void RFX_Text(CFieldExchange* pFX, LPCTSTR szName, CStringW& value, DWORD dwFlags = 0);
 	void RFX_Double(CFieldExchange* pFX, LPCTSTR szName, double& value, DWORD dwFlags = 0);
-	void RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CTime& value, DWORD dwFlags = 0);
+//	void RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CTime& value, DWORD dwFlags = 0);
+	void RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CDateLong& value, DWORD dwFlags = 0);
 //	void RFX_Time(CFieldExchange* pFX, LPCTSTR szName, CTime& value, DWORD dwFlags = 0);
 //	void RFX_DateTime(CFieldExchange* pFX, LPCTSTR szName, CTime& value, DWORD dwFlags = 0);
 	void RFX_Euro(CFieldExchange* pFX, LPCTSTR szName, CEuro& value, DWORD dwFlags = 0);

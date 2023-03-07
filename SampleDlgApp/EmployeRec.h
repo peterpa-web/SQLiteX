@@ -8,7 +8,7 @@ public:
 	CEmployeRec(CSQLiteDatabase* pDatabase = nullptr);
 	long	m_EmployeID = 0;
 	CString	m_FirstName;
-	CTime	m_Birthday;
+	CDateLong	m_Birthday;
 	long	m_CompID = 0;
 	CEuro	m_Salary;
 

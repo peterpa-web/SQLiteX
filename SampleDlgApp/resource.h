@@ -9,6 +9,7 @@
 #define IDR_MAINFRAME                   128
 #define IDD_COMP                        130
 #define IDD_EMPL                        132
+#define IDD_EXPORT                      134
 #define IDC_CREATE                      1000
 #define IDC_IMPORT                      1001
 #define IDC_LIST_COMP                   1002
@@ -17,24 +18,29 @@
 #define IDC_EDIT_FIRST_NAME             1003
 #define IDC_EDIT_COMP                   1004
 #define IDC_EDIT_BIRTHDAY               1004
+#define IDC_CHECK_COMP                  1004
 #define IDC_DEL_COMP                    1005
 #define IDC_EDIT_COMP_ID                1005
+#define IDC_CHECK_EMPL                  1005
 #define IDC_LIST_EMPL                   1006
 #define IDC_EDIT_SALARY                 1006
+#define IDC_COMBO_FMT                   1006
 #define IDC_ADD_EMPL                    1007
+#define IDC_EDIT_EXT                    1007
 #define IDC_EDIT_EMPL                   1008
+#define IDC_EDIT_EXT2                   1008
+#define IDC_EDIT_SEP                    1008
 #define IDC_DEL_EMPL                    1009
 #define IDC_LIST_EMPL_FULL              1010
-#define IDC_IMPORT2                     1011
 #define IDC_EXPORT                      1011
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        134
+#define _APS_NEXT_RESOURCE_VALUE        136
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1004
+#define _APS_NEXT_CONTROL_VALUE         1008
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -10,7 +10,7 @@ public:
 // Field/Param Data
 	long	m_EmployeID = 0;
 	CString	m_FirstName;
-	CTime	m_Birthday;
+	CDateLong	m_Birthday;
 	CEuro	m_Salary;
 	CString	m_CompName;
 

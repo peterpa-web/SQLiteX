@@ -12,6 +12,7 @@
 #include "EmployeFull.h"
 #include "DlgCompany.h"
 #include "DlgEmploye.h"
+#include "DlgExport.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -232,7 +233,7 @@ void CSampleDlg::FillListEmpl()
 		m_listEmpl.InsertItem(nItem, strId, 0);
 		m_listEmpl.SetItemData(nItem, er.m_EmployeID);
 		m_listEmpl.SetItemText(nItem, 1, er.m_FirstName);
-		m_listEmpl.SetItemText(nItem, 2, er.m_Birthday.Format("%d.%m.%Y"));
+		m_listEmpl.SetItemText(nItem, 2, er.m_Birthday.ToStringGer());
 		strId.Format(_T("%d"), er.m_CompID);
 		m_listEmpl.SetItemText(nItem, 3, strId);
 		m_listEmpl.SetItemText(nItem, 4, er.m_Salary.ToString());
@@ -254,7 +255,7 @@ void CSampleDlg::FillListEmplFull()
 		m_listEmplFull.InsertItem(nItem, strId, 0);
 		m_listEmplFull.SetItemData(nItem, ef.m_EmployeID);
 		m_listEmplFull.SetItemText(nItem, 1, ef.m_FirstName);
-		m_listEmplFull.SetItemText(nItem, 2, ef.m_Birthday.Format("%d.%m.%Y"));
+		m_listEmplFull.SetItemText(nItem, 2, ef.m_Birthday.ToStringGer());
 		m_listEmplFull.SetItemText(nItem, 3, ef.m_CompName);
 		m_listEmplFull.SetItemText(nItem, 4, ef.m_Salary.ToString());
 		ef.MoveNext();
@@ -309,16 +310,37 @@ void CSampleDlg::OnBnClickedImport()
 
 void CSampleDlg::OnBnClickedExport()
 {
+	CDlgExport dlg;
+	int nRc = dlg.DoModal();
+	if (nRc != IDOK)
+		return;
+
+	if (!(dlg.m_bCompany || dlg.m_bEmploye))
+		return;
+
+	TxtFmt fmt = TxtFmt::utf8International;
+	if (dlg.m_strFmt == _T("utf8Native"))
+		fmt = TxtFmt::utf8Native;
+	if (dlg.m_strFmt == _T("isoGerman"))
+		fmt = TxtFmt::isoGerman;
+	if (dlg.m_strFmt == _T("utf8MarkGerman"))
+		fmt = TxtFmt::utf8MarkGerman;
+
 	CreateDirectory(m_strExpDir, nullptr);
 	m_db.SetExportPath(m_strExpDir);
 
-	CCompanyRec c(&m_db);
-	c.Open();
-	c.Export(TxtFmt::utf8MarkGerman);
-
-	CEmployeRec e(&m_db);
-	e.Open();
-	e.Export(TxtFmt::utf8MarkGerman);
+	if (dlg.m_bCompany)
+	{
+		CCompanyRec c(&m_db);
+		c.Open();
+		c.Export(fmt, dlg.m_strExt, (char)dlg.m_strSep[0]);
+	}
+	if (dlg.m_bEmploye)
+	{
+		CEmployeRec e(&m_db);
+		e.Open();
+		e.Export(fmt, dlg.m_strExt, (char)dlg.m_strSep[0]);
+	}
 }
 
 
@@ -390,20 +412,7 @@ void CSampleDlg::OnBnClickedAddEmpl()
 	er.AddNew();
 	er.m_FirstName = dlg.m_strFirstName;
 	CStringA strData(dlg.m_strBirthday);
-	int p = 0;
-	CStringA s = strData.Tokenize(".", p);
-	if (p >= 0)
-	{
-		int d = atoi(s);
-		s = strData.Tokenize(".", p);
-		if (p >= 0)
-		{
-			int m = atoi(s);
-			s = strData.Tokenize(" ", p);
-			int y = atoi(s);
-			er.m_Birthday = CTime(y, m, d, 0, 0, 0);
-		}
-	}
+	er.m_Birthday = CDateLong(strData);
 	er.m_CompID = dlg.m_nCompId;
 	er.m_Salary = dlg.m_dSalary;
 	er.Update();
@@ -425,7 +434,7 @@ void CSampleDlg::OnBnClickedEditEmpl()
 
 	CDlgEmploye dlg(this);
 	dlg.m_strFirstName = er.m_FirstName;
-	dlg.m_strBirthday = er.m_Birthday.Format("%d.%m.%Y");
+	dlg.m_strBirthday = er.m_Birthday.ToStringGer();
 	dlg.m_nCompId = er.m_CompID;
 	dlg.m_dSalary = er.m_Salary.ToDouble();
 	int nRc = dlg.DoModal();
@@ -435,14 +444,7 @@ void CSampleDlg::OnBnClickedEditEmpl()
 	er.Edit();
 	er.m_FirstName = dlg.m_strFirstName;
 	CStringA strData(dlg.m_strBirthday);
-	int p = 0;
-	CStringA s = strData.Tokenize(".", p);
-	int d = atoi(s);
-	s = strData.Tokenize(".", p);
-	int m = atoi(s);
-	s = strData.Tokenize(" ", p);
-	int y = atoi(s);
-	er.m_Birthday = CTime(y, m, d, 0, 0, 0);
+	er.m_Birthday = CDateLong(strData);
 	er.m_CompID = dlg.m_nCompId;
 	er.m_Salary = dlg.m_dSalary;
 	er.Update();

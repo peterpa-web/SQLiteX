@@ -185,6 +185,7 @@
   <ItemGroup>
     <ClInclude Include="DlgCompany.h" />
     <ClInclude Include="DlgEmploye.h" />
+    <ClInclude Include="DlgExport.h" />
     <ClInclude Include="EmployeFull.h" />
     <ClInclude Include="CompanyRec.h" />
     <ClInclude Include="EmployeRec.h" />
@@ -198,6 +199,7 @@
   <ItemGroup>
     <ClCompile Include="DlgCompany.cpp" />
     <ClCompile Include="DlgEmploye.cpp" />
+    <ClCompile Include="DlgExport.cpp" />
     <ClCompile Include="EmployeFull.cpp" />
     <ClCompile Include="CompanyRec.cpp" />
     <ClCompile Include="EmployeRec.cpp" />

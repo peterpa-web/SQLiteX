@@ -33,6 +33,9 @@
     <ClInclude Include="Euro.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="DateLong.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -48,6 +51,9 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="Euro.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="DateLong.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>
