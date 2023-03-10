@@ -32,6 +32,7 @@ public:
 	void AddNew();
 	void Update();
 	void Delete();
+	void Drop();
 //	int GetRecordCount();
 //	void SetFieldDirty(void* pField);
 //	void SetAbsolutePosition(int nRecord);
@@ -50,15 +51,26 @@ public:
 	};
 
 protected:
-	enum class UpdState
+	enum class RecState
 	{
-		done, addNew, edit
-	} m_updState = UpdState::done;
+		done, open, addNew, edit
+	} m_recState = RecState::done;
 
 	enum class FX_Task
 	{
-		none, sqlCreate, sqlInsert, sqlSelect, sqlKey, 
-		dataClear, dataRead, dataWrite, dataIdent, dataImport, dataExport, dataUpdate, dataRowId
+		colNamesTypeForCreate,		// list of col names with type
+		colNamesForInsert,			// list of col names except pk
+		colNamesForSelect,			// list of col names
+		colVarsForImport,			// list of all col vars for binding
+		colParseBindForImport,		// parse and bind to all colls
+		colAllForExport,			// export line from all colls
+		colNameValForUpdate,		// list of col name = value pairs except pk
+		valClearAll,				// clear all values
+		valReadAll,					// read all colls to values
+		valStringForInsert,			// list values except pk
+		pkName,						// pk or _rowid_
+		pkString,					// get key value
+		pkAfterInsert				// last rowid
 	};
 
 	enum FX_Flags	// for create table

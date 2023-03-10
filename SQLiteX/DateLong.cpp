@@ -55,6 +55,14 @@ CTime CDateLong::ToTime()
 	return CTime(GetYear(), GetMonth(), GetDay(), 0, 0, 0);
 }
 
+COleDateTime CDateLong::ToOleDateTime()
+{
+	if (m_nValue == 0)
+		return COleDateTime();
+
+	return COleDateTime(GetYear(), GetMonth(), GetDay(), 0, 0, 0);
+}
+
 CStringA CDateLong::ToSQL()
 {
 	if (m_nValue == 0)
