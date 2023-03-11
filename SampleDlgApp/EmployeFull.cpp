@@ -4,7 +4,7 @@
 CEmployeFull::CEmployeFull(CSQLiteDatabase* pdb)
 	: CSQLiteRecordset(pdb)
 {
-	m_nDefaultType = readOnly;
+	m_nDefaultType = view;
 }
 
 CString CEmployeFull::GetDefaultSQL()
@@ -16,7 +16,8 @@ void CEmployeFull::DoFieldExchange(CFieldExchange* pFX)
 {
 	RFX_Long(pFX, _T("[EmployeID]"), m_EmployeID, FX_PK);
 	RFX_Text(pFX, _T("[FirstName]"), m_FirstName);
-	RFX_Date(pFX, _T("[Birthday]"), m_Birthday);
+//	RFX_Date(pFX, _T("[Birthday]"), m_Birthday);
+	RFX_DateTime(pFX, _T("[Birthday]"), m_Birthday);
 	RFX_Euro(pFX, _T("[Salary]"), m_Salary);
 	RFX_Text(pFX, _T("[CompName]"), m_CompName);
 }

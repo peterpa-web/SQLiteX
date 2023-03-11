@@ -32,7 +32,7 @@ bool CSQLiteRecordset::Open(LPCWSTR lpszSQL)
 	else
 	{
 		utf8SQL = "SELECT ";
-		CFieldExchange fx(FX_Task::colNamesForSelect);
+		CFieldExchange fx(FX_Task::colNames);
 		DoFieldExchange(&fx);
 		utf8SQL += fx.m_utf8SQL;
 		utf8SQL += " FROM ";
@@ -126,7 +126,7 @@ void CSQLiteRecordset::Create()
 	CStringA utf8Sql = "CREATE TABLE ";
 	CStringA utf8Table = ToUtf8(GetDefaultSQL());
 
-	CFieldExchange fx(FX_Task::colNamesTypeForCreate);
+	CFieldExchange fx(FX_Task::colTypesForCreate);
 	DoFieldExchange(&fx);
 
 	utf8Sql += utf8Table;
@@ -191,7 +191,7 @@ void CSQLiteRecordset::Import(TxtFmt fmt, LPCTSTR pszExt, char cSep)
 	if (m_recState != RecState::done)
 		throw new CSQLiteException(GetDefaultSQL() + ": Import() recState != done");
 
-	CFieldExchange fxN(FX_Task::colNamesForSelect);
+	CFieldExchange fxN(FX_Task::colNames);
 	DoFieldExchange(&fxN);
 
 	CStringA utf8InsertStmt = "INSERT INTO " + ToUtf8(GetDefaultSQL());
@@ -295,7 +295,7 @@ void CSQLiteRecordset::Export(TxtFmt fmt, LPCTSTR pszExt, char cSep)
 		while (!IsEOF())
 		{
 			++nLine;
-			CFieldExchange fx(FX_Task::colAllForExport);
+			CFieldExchange fx(FX_Task::valStrings);
 			fx.m_cSQLSep = cSep;
 			fx.m_fmt = fmt;
 			DoFieldExchange(&fx);
@@ -340,7 +340,7 @@ void CSQLiteRecordset::Edit()
 {
 	if (m_recState == RecState::edit)
 		return;
-	if (m_nDefaultType == readOnly)
+	if (m_nDefaultType == view)
 		throw new CSQLiteException(GetDefaultSQL() + ": readOnly");
 	if (m_recState != RecState::done)
 		throw new CSQLiteException(GetDefaultSQL() + ": Edit() recState != done");
@@ -351,7 +351,7 @@ void CSQLiteRecordset::AddNew()
 {
 	if (m_recState == RecState::addNew)
 		return;
-	if (m_nDefaultType == readOnly)
+	if (m_nDefaultType == view)
 		throw new CSQLiteException(GetDefaultSQL() + ": readOnly");
 	if (m_recState != RecState::done)
 		throw new CSQLiteException(GetDefaultSQL() + ": AddNew() recState != done");
@@ -364,17 +364,17 @@ void CSQLiteRecordset::Update()
 {
 	if (m_recState != RecState::addNew && m_recState != RecState::edit)
 		throw new CSQLiteException(GetDefaultSQL() + ": Update() missing AddNew() or Edit()");
-	if (m_nDefaultType == readOnly)
+	if (m_nDefaultType == view)
 		throw new CSQLiteException(GetDefaultSQL() + ": readOnly");
 	if (m_recState == RecState::addNew)
 	{
-		CFieldExchange fx1(FX_Task::colNamesForInsert);
+		CFieldExchange fx1(FX_Task::colNames);
 		DoFieldExchange(&fx1);
 
 		CStringA utf8Insert = "INSERT INTO " + ToUtf8(GetDefaultSQL());
 		utf8Insert += " (" + fx1.m_utf8SQL + ") VALUES (";
 
-		CFieldExchange fx2(FX_Task::valStringForInsert);
+		CFieldExchange fx2(FX_Task::valStrings);
 		DoFieldExchange(&fx2);
 		utf8Insert += fx2.m_utf8SQL + ");";
 		try
@@ -422,7 +422,7 @@ void CSQLiteRecordset::Update()
 
 void CSQLiteRecordset::Delete()
 {
-	if (m_nDefaultType == readOnly)
+	if (m_nDefaultType == view)
 		throw new CSQLiteException(GetDefaultSQL() + ": readOnly");
 	if (m_recState != RecState::done)
 		throw new CSQLiteException(GetDefaultSQL() + ": Delete() recState != done");
@@ -448,15 +448,34 @@ void CSQLiteRecordset::Delete()
 	}
 }
 
-void CSQLiteRecordset::Drop()
+void CSQLiteRecordset::DeleteAll()
 {
-	// todo: ??? drop view
-	if (m_nDefaultType == readOnly)
+	if (m_nDefaultType == view)
 		throw new CSQLiteException(GetDefaultSQL() + ": readOnly");
 	if (m_recState != RecState::done)
 		throw new CSQLiteException(GetDefaultSQL() + ": Delete() recState != done");
 
-	CStringA utf8Drop = "DROP TABLE " + ToUtf8(GetDefaultSQL()) + ';';
+	CStringA utf8Delete = "DELETE FROM " + ToUtf8(GetDefaultSQL()) + ';';
+	try
+	{
+		m_pDB->ExecuteSQL(utf8Delete);
+	}
+	catch (CSQLiteException* pe)
+	{
+		pe->AddContext(GetDefaultSQL());
+		throw;
+	}
+}
+
+void CSQLiteRecordset::Drop()
+{
+	if (m_recState != RecState::done)
+		throw new CSQLiteException(GetDefaultSQL() + ": Delete() recState != done");
+	CStringA utf8Drop = "DROP TABLE ";
+	if (m_nDefaultType == view)
+		utf8Drop = "DROP VIEW ";
+
+	utf8Drop += ToUtf8(GetDefaultSQL()) + ';';
 	try
 	{
 		m_pDB->ExecuteSQL(utf8Drop);
@@ -489,7 +508,7 @@ void CSQLiteRecordset::RFX_Gen(CFieldExchange* pFX, LPCTSTR szName, int nType, D
 {
 	switch (pFX->m_task)
 	{
-	case FX_Task::colNamesTypeForCreate:
+	case FX_Task::colTypesForCreate:
 	{
 		pFX->AddSQL(szName);
 		switch (nType)
@@ -518,27 +537,15 @@ void CSQLiteRecordset::RFX_Gen(CFieldExchange* pFX, LPCTSTR szName, int nType, D
 			pFX->m_utf8SQL += " UNIQUE";
 		break;
 	}
-	case FX_Task::colNamesForSelect:
+	case FX_Task::colNames:
 	{
 		pFX->AddSQL(szName);
-		break;
-	}
-	case FX_Task::colNamesForInsert:
-	{
-		if ((dwFlags & FX_PK) == 0)
-			pFX->AddSQL(szName);
 		break;
 	}
 	case FX_Task::pkName:
 		if ((dwFlags & FX_PK) != 0 && nType == SQLITE_INTEGER)
 			pFX->m_utf8SQL = ToUtf8(szName);
 		break;
-//	case FX_Task::colImportStrings:
-//	{
-//		CStringA strData = pFX->NextImportField();
-//		pFX->AddSQL(strData, ',');
-//		break;
-//	}
 	case FX_Task::colVarsForImport:
 		pFX->AddSQL("?", ',');
 		break;
@@ -568,8 +575,7 @@ void CSQLiteRecordset::RFX_Bool(CFieldExchange* pFX, LPCTSTR szName, BOOL& value
 		pFX->AddSQL(s);
 		break;
 	}
-	case FX_Task::valStringForInsert:
-	case FX_Task::colAllForExport:
+	case FX_Task::valStrings:
 		pFX->AddSQL(value == 0 ? "0" : "1");
 		break;
 	case FX_Task::colParseBindForImport:
@@ -599,28 +605,23 @@ void CSQLiteRecordset::RFX_Long(CFieldExchange* pFX, LPCTSTR szName, long& value
 		value = sqlite3_column_int(m_pStmt, pFX->m_nField++);
 		break;
 	case FX_Task::colNameValForUpdate:
-		if ((dwFlags & FX_PK) == 0)
-		{
-			CStringA s;
-			if (value != 0 || (dwFlags & FX_NN) != 0)
-				s.Format("%S=%d", szName, value);
-			else
-				s.Format("%S=NULL", szName);
-			pFX->AddSQL(s);
-		}
+	{
+		CStringA s;
+		if (value != 0 || (dwFlags & FX_NN) != 0)
+			s.Format("%S=%d", szName, value);
+		else
+			s.Format("%S=NULL", szName);
+		pFX->AddSQL(s);
 		break;
-	case FX_Task::valStringForInsert:
-		if ((dwFlags & FX_PK) != 0)
-			break;
-		// fall through
-	case FX_Task::colAllForExport:
-		{
-			CStringA s("NULL");
-			if (value != 0 || (dwFlags & FX_NN) != 0)
-				s.Format("%d", value);
-			pFX->AddSQL(s);
-		}
+	}
+	case FX_Task::valStrings:
+	{
+		CStringA s("NULL");
+		if (value != 0 || (dwFlags & FX_NN) != 0)
+			s.Format("%d", value);
+		pFX->AddSQL(s);
 		break;
+	}
 	case FX_Task::colParseBindForImport:
 	{
 		CStringA strData = pFX->NextImportField();
@@ -658,20 +659,6 @@ void CSQLiteRecordset::RFX_Text(CFieldExchange* pFX, LPCTSTR szName, CStringW& v
 	case FX_Task::valClearAll:
 		value.Empty();
 		break;
-//	case FX_Task::colImportStrings:
-//	{
-//		CStringA strData = pFX->NextImportField();
-//		if (strData[0] != '"')
-//			strData = '"' + strData + '"';
-//		if ((pFX->m_fmt == TxtFmt::standard && strData.FindOneOf("ÄÖÜäöüß") >= 0) ||
-//			pFX->m_fmt == TxtFmt::isoGerman)
-//		{
-//			CStringW str(strData);
-//			strData = ToUtf8(str);
-//		}
-//		pFX->AddSQL(strData, ',');
-//		break;
-//	}
 	case FX_Task::valReadAll:
 		value = (LPCWSTR)sqlite3_column_text16(m_pStmt, pFX->m_nField++);
 		break;
@@ -684,8 +671,7 @@ void CSQLiteRecordset::RFX_Text(CFieldExchange* pFX, LPCTSTR szName, CStringW& v
 			pFX->AddSQL(s + "NULL");
 		break;
 	}
-	case FX_Task::valStringForInsert:
-	case FX_Task::colAllForExport:
+	case FX_Task::valStrings:
 	{
 		if (!value.IsEmpty() || (dwFlags & FX_NN) != 0)
 		{
@@ -743,8 +729,7 @@ void CSQLiteRecordset::RFX_Double(CFieldExchange* pFX, LPCTSTR szName, double& v
 		pFX->AddSQL(s);
 		break;
 	}
-	case FX_Task::valStringForInsert:
-	case FX_Task::colAllForExport:
+	case FX_Task::valStrings:
 	{
 		CStringA s("NULL");
 		if (value != 0.0 || (dwFlags & FX_NN) != 0)
@@ -754,13 +739,6 @@ void CSQLiteRecordset::RFX_Double(CFieldExchange* pFX, LPCTSTR szName, double& v
 		pFX->AddSQL(s);
 		break;
 	}
-//	case FX_Task::colImportStrings:
-//	{
-//		CStringA strData = pFX->NextImportField();
-//		strData.Replace(',', '.');
-//		pFX->AddSQL(strData, ',');
-//		break;
-//	}
 	case FX_Task::colParseBindForImport:
 	{
 		CStringA strData = pFX->NextImportField();
@@ -798,31 +776,19 @@ void CSQLiteRecordset::RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CDateLong& 
 		pFX->AddSQL(s);
 		break;
 	}
-	case FX_Task::colAllForExport:
+	case FX_Task::valStrings:
 	{
 		CStringA s;
-		if (pFX->m_fmt == TxtFmt::utf8Native)
-			s = value.ToSQL();
-		else if (pFX->m_fmt == TxtFmt::utf8International)
+		if (pFX->m_fmt == TxtFmt::utf8International)
 			s = value.ToStringInt();
-		else	// german
+		else if (pFX->m_fmt == TxtFmt::utf8MarkGerman || 
+				 pFX->m_fmt == TxtFmt::isoGerman)
 			s = value.ToStringGer();
+		else
+			s = value.ToSQL();
 		pFX->AddSQL(s);
 		break;
 	}
-	case FX_Task::valStringForInsert:
-	{
-		CStringA s = value.ToSQL();
-		pFX->AddSQL(s);
-		break;
-	}
-//	case FX_Task::colImportStrings:
-//	{
-//		CStringA strData = CStringA(pFX->NextImportField());
-//		value = CDateLong(strData);
-//		pFX->AddSQL(value.ToSQL(), ',');
-//		break;
-//	}
 	case FX_Task::colParseBindForImport:
 	{
 		CStringA strData = pFX->NextImportField();
@@ -840,33 +806,209 @@ void CSQLiteRecordset::RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CDateLong& 
 	}
 }
 
+void CSQLiteRecordset::RFX_DateTime(CFieldExchange* pFX, LPCTSTR szName, COleDateTime& value, DWORD dwFlags)
+{
+	switch (pFX->m_task)
+	{
+	case FX_Task::valClearAll:
+		value = COleDateTime();
+		break;
+	case FX_Task::valReadAll:
+	{
+		DATE t = sqlite3_column_double(m_pStmt, pFX->m_nField++);
+		value = COleDateTime(t);
+		break;
+	}
+	case FX_Task::colNameValForUpdate:
+	{
+		CStringA s = szName;
+		if ((DATE)value != 0.0 || (dwFlags & FX_NN) != 0)
+			s.Format("%S=%f", szName, (DATE)value);
+		else
+			s.Format("%S=NULL", szName);
+		pFX->AddSQL(s);
+		break;
+	}
+	case FX_Task::valStrings:
+	{
+		CStringA s;
+		if ((DATE)value == 0.0)
+			s = "NULL";
+		else
+		{
+			if (pFX->m_fmt == TxtFmt::utf8International)
+				s = value.Format(L"%Y-%m-%d %H:%M:%S");
+			else if (pFX->m_fmt == TxtFmt::utf8MarkGerman ||
+				pFX->m_fmt == TxtFmt::isoGerman)
+				s = value.Format(L"%d.%m.%Y %H:%M:%S");
+			else
+				s.Format("%S=%f", szName, (DATE)value);
+		}
+		pFX->AddSQL(s);
+		break;
+	}
+	case FX_Task::colParseBindForImport:
+	{
+		CStringA str = pFX->NextImportField();
+		COleDateTime dt;
+		if (!dt.ParseDateTime(CString(str)))
+		{
+			if (!dt.ParseDateTime(CString(str)), 0, 1053)		// ISO fmt
+			{
+				int p = str.Find('.');
+				if (p > 0)
+					dt = atof(str);
+				else
+					dt = CDateLong(str).ToOleDateTime();
+			}
+		}
+		if (dt.GetStatus() != 0)
+			throw new CSQLiteException(L"Bad date/time");
+/*
+		CStringA s;
+		DATE da = 0.0;
+		int p = str.Find('.');
+		if (p > 0 && p < 3)
+		{
+			p = 0;
+			s = str.Tokenize(".", p);
+			if (p > 0)
+			{
+				int d = atoi(s);
+				s = str.Tokenize(".", p);
+				if (p > 0)
+				{
+					int mo = atoi(s);
+					s = str.Tokenize(" ", p);
+					if (p > 0)
+					{
+						int y = atoi(s);
+						s = str.Tokenize(":", p);
+						int h = 0;
+						int mn = 0;
+						int sec = 0;
+						if (p > 0)
+						{
+							h = atoi(s);
+							s = str.Tokenize(":", p);
+							if (p > 0)
+							{
+								mn = atoi(s);
+								s = str.Tokenize(" ", p);
+								sec = atoi(s);
+							}
+						}
+						ASSERT(y >= 1000 && y <= 9999);
+						ASSERT(mo >= 1 && mo <= 12);
+						ASSERT(d >= 1 && d <= 31);
+						ASSERT(h >= 0 && h < 24);
+						ASSERT(mn >= 0 && mn < 60);
+						ASSERT(sec >= 0 && sec < 60);
+						dt = COleDateTime(y, mo, d, h, mn, sec);
+					}
+				}
+				else
+					dt = atof(str);
+			}
+		}
+		else
+		{
+			p = 0;
+			s = str.Tokenize("-", p);
+			if (p > 0)
+			{
+				int y = atoi(s);
+				s = str.Tokenize("-", p);
+				if (p > 0)
+				{
+					int mo = atoi(s);
+					s = str.Tokenize(" ", p);
+					if (p > 0)
+					{
+						int d = atoi(s);
+						s = str.Tokenize(":", p);
+						if (p > 0)
+						{
+							int h = atoi(s);
+							s = str.Tokenize(":", p);
+							if (p > 0)
+							{
+								int mn = atoi(s);
+								s = str.Tokenize(" ", p);
+								int sec = atoi(s);
+								ASSERT(y >= 1000 && y <= 9999);
+								ASSERT(mo >= 1 && mo <= 12);
+								ASSERT(d >= 1 && d <= 31);
+								ASSERT(h >= 0 && h < 24);
+								ASSERT(mn >= 0 && mn < 60);
+								ASSERT(sec >= 0 && sec < 60);
+								dt = COleDateTime(y, mo, d, h, mn, sec);
+							}
+						}
+					}
+				}
+			}
+			else
+			{
+				p = 0;
+				s = str.Tokenize(":", p);
+				if (p > 0)
+				{
+					int h = atoi(s);
+					s = str.Tokenize(":", p);
+					if (p > 0)
+					{
+						int mn = atoi(s);
+						s = str.Tokenize(" ", p);
+						int sec = atoi(s);
+						ASSERT(h >= 0 && h < 24);
+						ASSERT(mn >= 0 && mn < 60);
+						ASSERT(sec >= 0 && sec < 60);
+						dt = COleDateTime(0, 0, 0, h, mn, sec);
+					}
+				}
+				else
+				{
+					CDateLong dl (str);
+					dt = COleDateTime(dl.GetYear(), dl.GetMonth(), dl.GetDay(), 0, 0, 0);
+				}		
+			}
+		}
+*/
+		if ((DATE)dt != 0.0 || (dwFlags & FX_NN) != 0)
+			sqlite3_bind_double(m_pStmt, ++pFX->m_nField, (DATE)dt);
+		else
+			sqlite3_bind_null(m_pStmt, ++pFX->m_nField);
+		break;
+	}
+	default:
+		RFX_Gen(pFX, szName, SQLITE_FLOAT, dwFlags);
+		break;
+	}
+}
+
 void CSQLiteRecordset::RFX_Euro(CFieldExchange* pFX, LPCTSTR szName, CEuro& value, DWORD dwFlags)
 {
 	switch (pFX->m_task)
 	{
-//	case FX_Task::colImportStrings:
-//	{
-//		CStringA strData = pFX->NextImportField();
-//		CEuro e;
-//		e.FromString(strData);
-//		CStringA str;
-//		str.Format("%d", e.GetCentsRef());
-//		pFX->AddSQL(str, ',');
-//		break;
-//	}
-	case FX_Task::colAllForExport:
+	case FX_Task::valStrings:
 	{
 		if (value.GetCentsRef() == 0)
 			pFX->AddSQL("NULL");
 		else
 		{
 			CString s;
-			if (pFX->m_fmt == TxtFmt::utf8Native)
-				s.Format(_T("%d"), value.GetCentsRef());
-			else
+			s.Format(_T("%d"), value.GetCentsRef());
+			if (pFX->m_fmt == TxtFmt::utf8MarkGerman ||
+				pFX->m_fmt == TxtFmt::isoGerman)
+			{
 				s = value.ToString();
-			if (pFX->m_fmt == TxtFmt::utf8International)
+			}
+			else if (pFX->m_fmt == TxtFmt::utf8International)
+			{
+				s = value.ToString();
 				s.Replace(',', '.');
+			}
 			pFX->AddSQL(s);
 		}
 		break;
@@ -906,10 +1048,16 @@ CStringA CSQLiteRecordset::CFieldExchange::NextImportField()
 	if (m_strImportLine[s] == '"')
 		strLim = _T("\"") + CStringA(m_cSQLSep);
 	int p = m_strImportLine.Find(strLim, s);
-	if (p > 0)	// strip quotes
+	if (p > 0)
 	{
 		m_nStartField = p + strLim.GetLength();
-		return m_strImportLine.Mid(s, p - s + strLim.GetLength() - 1);
+		int c = p - s;
+		if (strLim.GetLength() > 1)	// strip quotes
+		{
+			s++;
+			c--;
+		}
+		return m_strImportLine.Mid(s, c);
 	}
 	else
 	{

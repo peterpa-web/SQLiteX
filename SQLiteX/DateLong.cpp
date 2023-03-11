@@ -45,6 +45,9 @@ CDateLong::CDateLong(const CStringA& str)
 		}
 	}
 	m_nValue = atoi(str);
+	ASSERT(GetYear() >= 1000 && GetYear() <= 9999);
+	ASSERT(GetMonth() >= 1 && GetMonth() <= 12);
+	ASSERT(GetDay() >= 1 && GetDay() <= 31);
 }
 
 CTime CDateLong::ToTime()

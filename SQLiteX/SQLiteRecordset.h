@@ -32,6 +32,7 @@ public:
 	void AddNew();
 	void Update();
 	void Delete();
+	void DeleteAll();
 	void Drop();
 //	int GetRecordCount();
 //	void SetFieldDirty(void* pField);
@@ -47,7 +48,7 @@ public:
 		snapshot,       // uses SQLExtendedFetch, static cursor
 //		forwardOnly,    // uses SQLFetch
 //		dynamic,        // uses SQLExtendedFetch, dynamic cursor
-		readOnly	// is a view, no table
+		view			// view is readOnly
 	};
 
 protected:
@@ -58,16 +59,14 @@ protected:
 
 	enum class FX_Task
 	{
-		colNamesTypeForCreate,		// list of col names with type
-		colNamesForInsert,			// list of col names except pk
-		colNamesForSelect,			// list of col names
+		colTypesForCreate,			// list of col names with type
+		colNames,					// list of col names
 		colVarsForImport,			// list of all col vars for binding
 		colParseBindForImport,		// parse and bind to all colls
-		colAllForExport,			// export line from all colls
-		colNameValForUpdate,		// list of col name = value pairs except pk
+		colNameValForUpdate,		// list of col name = value pairs
 		valClearAll,				// clear all values
 		valReadAll,					// read all colls to values
-		valStringForInsert,			// list values except pk
+		valStrings,					// list values
 		pkName,						// pk or _rowid_
 		pkString,					// get key value
 		pkAfterInsert				// last rowid
@@ -120,8 +119,7 @@ protected:
 	void RFX_Double(CFieldExchange* pFX, LPCTSTR szName, double& value, DWORD dwFlags = 0);
 //	void RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CTime& value, DWORD dwFlags = 0);
 	void RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CDateLong& value, DWORD dwFlags = 0);
-//	void RFX_Time(CFieldExchange* pFX, LPCTSTR szName, CTime& value, DWORD dwFlags = 0);
-//	void RFX_DateTime(CFieldExchange* pFX, LPCTSTR szName, CTime& value, DWORD dwFlags = 0);
+	void RFX_DateTime(CFieldExchange* pFX, LPCTSTR szName, COleDateTime& value, DWORD dwFlags = 0);
 	void RFX_Euro(CFieldExchange* pFX, LPCTSTR szName, CEuro& value, DWORD dwFlags = 0);
 
 	CSQLiteDatabase* m_pDB;
