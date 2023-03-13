@@ -1,6 +1,7 @@
 #pragma once
 #include "Euro.h"
 #include "DateLong.h"
+#include "Blob.h"
 #include "SQLiteDatabase.h"
 
 enum class TxtFmt
@@ -123,15 +124,16 @@ protected:
 	void RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CDateLong& value, DWORD dwFlags = 0);
 	void RFX_DateTime(CFieldExchange* pFX, LPCTSTR szName, COleDateTime& value, DWORD dwFlags = 0);
 	void RFX_Euro(CFieldExchange* pFX, LPCTSTR szName, CEuro& value, DWORD dwFlags = 0);
+	void RFX_Blob(CFieldExchange* pFX, LPCTSTR szName, CBlob& value, DWORD dwFlags = 0);
 
 	CSQLiteDatabase* m_pDB;
 	sqlite3_stmt* m_pStmt = nullptr;
 	int m_nParams = 0;
 	bool m_bEOF = true;
-	long m_nRowId = 0;			// see edit()
+	long m_nRowId = 0;			// see Edit() & OpenRow()
 
 	int m_nFields = 0;			// dummy
-	int m_nDefaultType = 0;
+	int m_nDefaultType = snapshot;
 
 private:
 	void RFX_Gen(CFieldExchange* pFX, LPCTSTR szName, int nType, DWORD dwFlags);

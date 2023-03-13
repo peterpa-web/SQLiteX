@@ -147,6 +147,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Blob.h" />
     <ClInclude Include="DateLong.h" />
     <ClInclude Include="Euro.h" />
     <ClInclude Include="framework.h" />
@@ -156,6 +157,7 @@
     <ClInclude Include="SQLiteRecordset.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Blob.cpp" />
     <ClCompile Include="DateLong.cpp" />
     <ClCompile Include="Euro.cpp" />
     <ClCompile Include="pch.cpp">

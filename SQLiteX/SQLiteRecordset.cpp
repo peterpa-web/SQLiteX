@@ -556,7 +556,6 @@ void CSQLiteRecordset::RFX_Gen(CFieldExchange* pFX, LPCTSTR szName, int nType, D
 			pFX->m_utf8SQL += " TEXT";
 			break;
 		case SQLITE_BLOB:
-			ASSERT(FALSE);		// to be implemented
 			pFX->m_utf8SQL += " BLOB";
 			break;
 		default:
@@ -945,6 +944,53 @@ void CSQLiteRecordset::RFX_Euro(CFieldExchange* pFX, LPCTSTR szName, CEuro& valu
 	}
 	default:
 		RFX_Long(pFX, szName, value.GetCentsRef(), dwFlags);
+		break;
+	}
+}
+
+void CSQLiteRecordset::RFX_Blob(CFieldExchange* pFX, LPCTSTR szName, CBlob& value, DWORD dwFlags)
+{
+	switch (pFX->m_task)
+	{
+	case FX_Task::valClearAll:
+		value.Empty();
+		break;
+	case FX_Task::valReadAll:
+	{
+		DWORD dwSize = sqlite3_column_bytes(m_pStmt, pFX->m_nField);
+		value.SetData(dwSize,sqlite3_column_blob(m_pStmt, pFX->m_nField++));
+		break;
+	}
+	case FX_Task::valToExport:
+	{
+		if (!value.IsEmpty() || (dwFlags & FX_NN) != 0)
+		{
+			CStringA s;
+			s.Format("BLOB(%d)", value.GetSize());
+			pFX->AddSQL(s);
+		}
+		else
+			pFX->AddSQL("NULL");
+		break;
+	}
+	case FX_Task::valParseImport:
+	{
+		CStringA strData = pFX->NextImportField();
+		value.Empty();		// not impl
+	}
+	case FX_Task::colBind:
+	{
+		int nRC;
+		if (!value.IsEmpty() || (dwFlags & FX_NN) != 0)
+			nRC = sqlite3_bind_blob(m_pStmt, ++pFX->m_nField, value.GetData(), value.GetSize(), NULL);
+		else
+			nRC = sqlite3_bind_null(m_pStmt, ++pFX->m_nField);
+		break;
+		if (nRC != SQLITE_OK)
+			throw new CSQLiteException(m_pDB->GetLastError());
+	}
+	default:
+		RFX_Gen(pFX, szName, SQLITE_BLOB, dwFlags);
 		break;
 	}
 }
