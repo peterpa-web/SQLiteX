@@ -234,7 +234,7 @@ void CSampleDlg::FillListEmpl()
 		m_listEmpl.SetItemData(nItem, er.m_EmployeID);
 		m_listEmpl.SetItemText(nItem, 1, er.m_FirstName);
 //		m_listEmpl.SetItemText(nItem, 2, er.m_Birthday.ToStringGer());
-		m_listEmpl.SetItemText(nItem, 2, er.m_Birthday.Format(L"%d.%m.%Y"));
+		m_listEmpl.SetItemText(nItem, 2, (DATE)er.m_Birthday == 0.0 ? _T("NULL") : er.m_Birthday.Format(L"%d.%m.%Y"));
 		strId.Format(_T("%d"), er.m_CompID);
 		m_listEmpl.SetItemText(nItem, 3, strId);
 		m_listEmpl.SetItemText(nItem, 4, er.m_Salary.ToString());
@@ -257,7 +257,7 @@ void CSampleDlg::FillListEmplFull()
 		m_listEmplFull.SetItemData(nItem, ef.m_EmployeID);
 		m_listEmplFull.SetItemText(nItem, 1, ef.m_FirstName);
 //		m_listEmplFull.SetItemText(nItem, 2, ef.m_Birthday.ToStringGer());
-		m_listEmplFull.SetItemText(nItem, 2, ef.m_Birthday.Format(L"%d.%m.%Y"));
+		m_listEmplFull.SetItemText(nItem, 2, (DATE)ef.m_Birthday == 0.0 ? _T("NULL") : ef.m_Birthday.Format(L"%d.%m.%Y"));
 		m_listEmplFull.SetItemText(nItem, 3, ef.m_CompName);
 		m_listEmplFull.SetItemText(nItem, 4, ef.m_Salary.ToString());
 		ef.MoveNext();
@@ -439,7 +439,7 @@ void CSampleDlg::OnBnClickedEditEmpl()
 	CDlgEmploye dlg(this);
 	dlg.m_strFirstName = er.m_FirstName;
 //	dlg.m_strBirthday = er.m_Birthday.ToStringGer();
-	dlg.m_strBirthday = er.m_Birthday.Format(L"%d.%m.%Y");
+	dlg.m_strBirthday = (DATE)er.m_Birthday == 0.0 ? _T("NULL") : er.m_Birthday.Format(L"%d.%m.%Y");
 	dlg.m_nCompId = er.m_CompID;
 	dlg.m_dSalary = er.m_Salary.ToDouble();
 	int nRc = dlg.DoModal();

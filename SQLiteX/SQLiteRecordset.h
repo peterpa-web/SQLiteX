@@ -18,20 +18,21 @@ public:
 	CSQLiteRecordset(CSQLiteDatabase* pdb);
 	~CSQLiteRecordset();
 	virtual bool Open(LPCWSTR lpszSQL = nullptr);
-	bool OpenRow(long nRow);
+	bool OpenRow(long nRowId = 0);
 	virtual void Close();
 	bool Requery();
 	bool IsOpen() const;
 	bool IsEOF() const { return m_bEOF; }		// End Of File
 	bool IsDeleted() const;
 	void Create();
+	void Clear();	// reset the column variables
 	void Import(TxtFmt fmt = TxtFmt::standard, LPCTSTR pszExt = _T("txt"), char cSep = ';');
 	void Export(TxtFmt fmt, LPCTSTR pszExt = _T("txt"), char cSep = ';');		// expects Open()
 	void MoveNext();
-	void Edit();
+	void Edit(long nRowId = 0);
 	void AddNew();
 	void Update();
-	void Delete();
+	void Delete(long nRowId = 0);
 	void DeleteAll();
 	void Drop();
 //	int GetRecordCount();
@@ -61,15 +62,15 @@ protected:
 	{
 		colTypesForCreate,			// list of col names with type
 		colNames,					// list of col names
-		colVarsForImport,			// list of all col vars for binding
-		colParseBindForImport,		// parse and bind to all colls
-		colNameValForUpdate,		// list of col name = value pairs
+		colVarsForInsert,			// list of all col vars for binding
+		colBind,					// bind for all colls
+		colNameVarsForUpdate,		// list of col name=? pairs excl. pk
 		valClearAll,				// clear all values
+		valParseImport,				// parse import strings
 		valReadAll,					// read all colls to values
-		valStrings,					// list values
-		pkName,						// pk or _rowid_
-		pkString,					// get key value
-		pkAfterInsert				// last rowid
+		valToExport,				// list value strings for export
+		pkName,						// pk if found
+		pkAfterInsert				// assign last rowid
 	};
 
 	enum FX_Flags	// for create table
@@ -106,8 +107,9 @@ protected:
 		CStringA m_utf8SQL;
 		CStringA m_strImportLine;
 		int m_nStartField = 0;	// position in import line
-		long m_nRowId = 0;
+//		long m_nRowId = 0;
 		TxtFmt m_fmt = TxtFmt::standard;
+		bool m_bSkipPk = false;
 	};
 
 	virtual CString GetDefaultSQL() = 0;		// Default SQL for Recordset -> table name
@@ -126,6 +128,7 @@ protected:
 	sqlite3_stmt* m_pStmt = nullptr;
 	int m_nParams = 0;
 	bool m_bEOF = true;
+	long m_nRowId = 0;			// see edit()
 
 	int m_nFields = 0;			// dummy
 	int m_nDefaultType = 0;
