@@ -15,9 +15,11 @@ enum class TxtFmt
 
 class CSQLiteRecordset
 {
+private:
+	CSQLiteRecordset() {}	// don't use
 public:
 	CSQLiteRecordset(CSQLiteDatabase* pdb);
-	~CSQLiteRecordset();
+	virtual ~CSQLiteRecordset();
 	virtual bool Open(LPCWSTR lpszSQL = nullptr);
 	bool OpenRow(long nRowId = 0);
 	virtual void Close();
@@ -54,17 +56,17 @@ public:
 	};
 
 protected:
-	enum class RecState
+	enum class UpdState
 	{
-		done, open, addNew, edit
-	} m_recState = RecState::done;
+		done, addNew, edit
+	} m_updState = UpdState::done;
 
 	enum class FX_Task
 	{
 		colTypesForCreate,			// list of col names with type
 		colNames,					// list of col names
 		colVarsForInsert,			// list of all col vars for binding
-		colBind,					// bind for all colls
+		colBind,					// bind all colls for update
 		colNameVarsForUpdate,		// list of col name=? pairs excl. pk
 		valClearAll,				// clear all values
 		valParseImport,				// parse import strings
@@ -127,13 +129,16 @@ protected:
 	void RFX_Blob(CFieldExchange* pFX, LPCTSTR szName, CBlob& value, DWORD dwFlags = 0);
 
 	CSQLiteDatabase* m_pDB;
-	sqlite3_stmt* m_pStmt = nullptr;
+	sqlite3_stmt* m_pStmtSel = nullptr;
+	sqlite3_stmt* m_pStmtUpd = nullptr;
 	int m_nParams = 0;
 	bool m_bEOF = true;
 	long m_nRowId = 0;			// see Edit() & OpenRow()
 
 	int m_nFields = 0;			// dummy
 	int m_nDefaultType = snapshot;
+
+	void CloseUpd();
 
 private:
 	void RFX_Gen(CFieldExchange* pFX, LPCTSTR szName, int nType, DWORD dwFlags);

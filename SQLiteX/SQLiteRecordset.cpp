@@ -11,6 +11,7 @@ CSQLiteRecordset::CSQLiteRecordset(CSQLiteDatabase* pdb) : m_pDB(pdb)
 CSQLiteRecordset::~CSQLiteRecordset()
 {
 	Close();
+	CloseUpd();
 }
 
 bool CSQLiteRecordset::Open(LPCWSTR lpszSQL)
@@ -20,11 +21,6 @@ bool CSQLiteRecordset::Open(LPCWSTR lpszSQL)
 		ASSERT(FALSE);
 		return false;
 	}
-
-	if (m_recState != RecState::done)
-		throw new CSQLiteException(GetDefaultSQL() + ": Open() recState != done");
-
-	m_recState = RecState::open;
 
 	CStringA utf8SQL;
 	if (lpszSQL != nullptr)
@@ -51,7 +47,8 @@ bool CSQLiteRecordset::Open(LPCWSTR lpszSQL)
 		utf8SQL += ";";
 	}
 
-	int iResult = sqlite3_prepare_v2(m_pDB->GetHandle(), utf8SQL, -1, &m_pStmt, NULL);
+	TRACE1("Open %S\n", utf8SQL);
+	int iResult = sqlite3_prepare_v2(m_pDB->GetHandle(), utf8SQL, -1, &m_pStmtSel, NULL);
 	if (iResult != SQLITE_OK)
 	{
 		CString str;
@@ -84,20 +81,18 @@ bool CSQLiteRecordset::OpenRow(long nRowId)
 void CSQLiteRecordset::Close()
 {
 	m_bEOF = true;
-	m_recState = RecState::done;
-	if (m_pStmt == nullptr)
+	if (m_pStmtSel == nullptr)
 		return;
 
-	int iResult = sqlite3_finalize(m_pStmt);
+	int iResult = sqlite3_finalize(m_pStmtSel);
 	if (iResult != 0)
-		TRACE1("sqlite3_finalize() ret=%d\n", iResult);
-	m_pStmt = nullptr;
+		TRACE1("sqlite3_finalize() sel ret=%d\n", iResult);
+	m_pStmtSel = nullptr;
 }
 
 bool CSQLiteRecordset::Requery()
 {
-	int iResult = sqlite3_reset(m_pStmt);
-	ASSERT(m_recState == RecState::open);
+	int iResult = sqlite3_reset(m_pStmtSel);
 	if (iResult != SQLITE_OK)
 	{
 		CString str;
@@ -112,7 +107,7 @@ bool CSQLiteRecordset::Requery()
 
 bool CSQLiteRecordset::IsOpen() const
 {
-	return m_recState == RecState::open && m_pStmt != nullptr;
+	return m_pStmtSel != nullptr;
 }
 
 bool CSQLiteRecordset::IsDeleted() const
@@ -122,8 +117,8 @@ bool CSQLiteRecordset::IsDeleted() const
 
 void CSQLiteRecordset::Create()
 {
-	if (m_recState != RecState::done)
-		throw new CSQLiteException(GetDefaultSQL() + ": Create() recState != done");
+	if (m_updState != UpdState::done)
+		throw new CSQLiteException(GetDefaultSQL() + ": Create() updState != done");
 	CStringA utf8Sql = "CREATE TABLE ";
 	CStringA utf8Table = ToUtf8(GetDefaultSQL());
 
@@ -195,8 +190,8 @@ BOOL CSQLiteRecordset::ReadStringA(CStdioFile& f, CStringA& rString)
 
 void CSQLiteRecordset::Import(TxtFmt fmt, LPCTSTR pszExt, char cSep)
 {
-	if (m_recState != RecState::done)
-		throw new CSQLiteException(GetDefaultSQL() + ": Import() recState != done");
+	if (m_updState != UpdState::done)
+		throw new CSQLiteException(GetDefaultSQL() + ": Import() updState != done");
 
 	CFieldExchange fxN(FX_Task::colNames);
 	DoFieldExchange(&fxN);
@@ -210,7 +205,7 @@ void CSQLiteRecordset::Import(TxtFmt fmt, LPCTSTR pszExt, char cSep)
 	utf8InsertStmt += fxV.m_utf8SQL;
 	utf8InsertStmt += ");";
 	TRACE1("Import: %S\n", utf8InsertStmt);
-	int iResult = sqlite3_prepare_v2(m_pDB->GetHandle(), utf8InsertStmt, -1, &m_pStmt, NULL);
+	int iResult = sqlite3_prepare_v2(m_pDB->GetHandle(), utf8InsertStmt, -1, &m_pStmtSel, NULL);
 	if (iResult != SQLITE_OK)
 	{
 		CString str;
@@ -249,14 +244,14 @@ void CSQLiteRecordset::Import(TxtFmt fmt, LPCTSTR pszExt, char cSep)
 			CFieldExchange fxB(FX_Task::colBind);
 			DoFieldExchange(&fxB);
 
-			iResult = sqlite3_step(m_pStmt);
+			iResult = sqlite3_step(m_pStmtSel);
 			if (iResult != SQLITE_DONE)
 			{
 				CString str;
 				str.Format(_T("Import step %s: %s"), (LPCWSTR)GetDefaultSQL(), (LPCWSTR)m_pDB->GetLastError());
 				throw new CSQLiteException(str);
 			}
-			iResult = sqlite3_reset(m_pStmt);
+			iResult = sqlite3_reset(m_pStmtSel);
 			if (iResult != SQLITE_OK)
 			{
 				CString str;
@@ -290,8 +285,8 @@ void CSQLiteRecordset::Export(TxtFmt fmt, LPCTSTR pszExt, char cSep)
 {
 	ASSERT(fmt != TxtFmt::standard);
 
-	if (m_recState != RecState::open)
-		throw new CSQLiteException(GetDefaultSQL() + ": Export() recState != open");
+	if (!IsOpen())
+		throw new CSQLiteException(GetDefaultSQL() + ": Export() open missing");
 
 	int nLine = 0;
 	try
@@ -327,7 +322,7 @@ void CSQLiteRecordset::Export(TxtFmt fmt, LPCTSTR pszExt, char cSep)
 
 void CSQLiteRecordset::MoveNext()
 {
-	int iResult = sqlite3_step(m_pStmt);
+	int iResult = sqlite3_step(m_pStmtSel);
 	if (iResult != SQLITE_ROW)
 	{
 		m_bEOF = true;
@@ -350,35 +345,40 @@ void CSQLiteRecordset::MoveNext()
 void CSQLiteRecordset::Edit(long nRowId)
 {
 	m_nRowId = nRowId;
-	if (m_recState == RecState::edit)
+	if (m_updState == UpdState::edit)
 		return;
 	if (m_nDefaultType == view)
 		throw new CSQLiteException(GetDefaultSQL() + ": Edit() view is readOnly");
-	if (m_recState != RecState::done)
-		throw new CSQLiteException(GetDefaultSQL() + ": Edit() recState != done");
-	m_recState = RecState::edit;
+	if (m_updState != UpdState::done)
+		throw new CSQLiteException(GetDefaultSQL() + ": Edit() updState != done");
+	if (nRowId != 0)
+	{
+		OpenRow(nRowId);	// fetch old data
+		Close();
+	}
+	m_updState = UpdState::edit;
 }
 
 void CSQLiteRecordset::AddNew()
 {
-	if (m_recState == RecState::addNew)
+	if (m_updState == UpdState::addNew)
 		return;
 	if (m_nDefaultType == view)
 		throw new CSQLiteException(GetDefaultSQL() + ": AddNew() view is readOnly");
-	if (m_recState != RecState::done)
-		throw new CSQLiteException(GetDefaultSQL() + ": AddNew() recState != done");
-	m_recState = RecState::addNew;
+	if (m_updState != UpdState::done)
+		throw new CSQLiteException(GetDefaultSQL() + ": AddNew() updState != done");
+	m_updState = UpdState::addNew;
 	Clear();
 }
 
 void CSQLiteRecordset::Update()
 {
-	if (m_recState != RecState::addNew && m_recState != RecState::edit)
+	if (m_updState != UpdState::addNew && m_updState != UpdState::edit)
 		throw new CSQLiteException(GetDefaultSQL() + ": Update() missing AddNew() or Edit()");
 	if (m_nDefaultType == view)
 		throw new CSQLiteException(GetDefaultSQL() + ": Update() view is readOnly");
 	CStringA utf8SQL;
-	if (m_recState == RecState::addNew)
+	if (m_updState == UpdState::addNew)
 	{
 		CFieldExchange fx1(FX_Task::colNames);
 		DoFieldExchange(&fx1);
@@ -390,7 +390,7 @@ void CSQLiteRecordset::Update()
 		DoFieldExchange(&fx2);
 		utf8SQL += fx2.m_utf8SQL + ");";
 	}
-	else if (m_recState == RecState::edit)
+	else if (m_updState == UpdState::edit)
 	{
 		CFieldExchange fx1(FX_Task::colNameVarsForUpdate);
 		DoFieldExchange(&fx1);
@@ -398,8 +398,8 @@ void CSQLiteRecordset::Update()
 		utf8SQL = "UPDATE " + ToUtf8(GetDefaultSQL()) + " SET " + fx1.m_utf8SQL;
 
 		CFieldExchange fx2(FX_Task::pkName);
-		DoFieldExchange(&fx2);
 		fx2.m_utf8SQL = "_rowid_";
+		DoFieldExchange(&fx2);
 		utf8SQL += " WHERE " + fx2.m_utf8SQL;
 		utf8SQL += "=?;";
 
@@ -410,7 +410,7 @@ void CSQLiteRecordset::Update()
 	TRACE1("Update: %S\n", utf8SQL);
 	try
 	{
-		int iResult = sqlite3_prepare_v2(m_pDB->GetHandle(), utf8SQL, -1, &m_pStmt, NULL);
+		int iResult = sqlite3_prepare_v2(m_pDB->GetHandle(), utf8SQL, -1, &m_pStmtUpd, NULL);
 		if (iResult != SQLITE_OK)
 		{
 			CString str;
@@ -418,12 +418,12 @@ void CSQLiteRecordset::Update()
 			throw new CSQLiteException(str);
 		}
 		CFieldExchange fxB(FX_Task::colBind);
-		fxB.m_bSkipPk = m_recState == RecState::edit;
+		fxB.m_bSkipPk = m_updState == UpdState::edit;
 		DoFieldExchange(&fxB);
 
-		if (m_recState == RecState::edit)
+		if (m_updState == UpdState::edit)
 		{
-			iResult = sqlite3_bind_int(m_pStmt, ++fxB.m_nField, m_nRowId);
+			iResult = sqlite3_bind_int(m_pStmtUpd, ++fxB.m_nField, m_nRowId);
 			if (iResult != SQLITE_OK)
 			{
 				CString str;
@@ -432,7 +432,7 @@ void CSQLiteRecordset::Update()
 			}
 		}
 
-		iResult = sqlite3_step(m_pStmt);
+		iResult = sqlite3_step(m_pStmtUpd);
 		if (iResult != SQLITE_DONE)
 		{
 			CString str;
@@ -443,24 +443,24 @@ void CSQLiteRecordset::Update()
 	catch (CSQLiteException* pe)
 	{
 		pe->AddContext(GetDefaultSQL());
-		Close();
+		CloseUpd();
 		throw;
 	}
-	if (m_recState == RecState::addNew)
+	if (m_updState == UpdState::addNew)
 	{
 		CFieldExchange fx3(FX_Task::pkAfterInsert);
 		m_nRowId = m_pDB->GetLastRowId();
 		DoFieldExchange(&fx3);
 	}
-	Close();
+	CloseUpd();
 }
 
 void CSQLiteRecordset::Delete(long nRowId)
 {
 	if (m_nDefaultType == view)
 		throw new CSQLiteException(GetDefaultSQL() + ": readOnly");
-	if (m_recState != RecState::done)
-		throw new CSQLiteException(GetDefaultSQL() + ": Delete() recState != done");
+	if (m_updState != UpdState::done)
+		throw new CSQLiteException(GetDefaultSQL() + ": Delete() updState != done");
 
 	m_nRowId = nRowId;
 	CFieldExchange fx(FX_Task::pkName);
@@ -485,8 +485,8 @@ void CSQLiteRecordset::DeleteAll()
 {
 	if (m_nDefaultType == view)
 		throw new CSQLiteException(GetDefaultSQL() + ": readOnly");
-	if (m_recState != RecState::done)
-		throw new CSQLiteException(GetDefaultSQL() + ": Delete() recState != done");
+	if (m_updState != UpdState::done)
+		throw new CSQLiteException(GetDefaultSQL() + ": Delete() updState != done");
 
 	CStringA utf8Delete = "DELETE FROM " + ToUtf8(GetDefaultSQL()) + ';';
 	try
@@ -502,8 +502,8 @@ void CSQLiteRecordset::DeleteAll()
 
 void CSQLiteRecordset::Drop()
 {
-	if (m_recState != RecState::done)
-		throw new CSQLiteException(GetDefaultSQL() + ": Delete() recState != done");
+	if (m_updState != UpdState::done)
+		throw new CSQLiteException(GetDefaultSQL() + ": Delete() updState != done");
 	CStringA utf8Drop = "DROP TABLE ";
 	if (m_nDefaultType == view)
 		utf8Drop = "DROP VIEW ";
@@ -536,6 +536,18 @@ void CSQLiteRecordset::SetAbsolutePosition(int nRecord)
 	throw new CSQLiteException(GetDefaultSQL() + ": SetAbsolutePosition() to be implemented");
 }
 */
+
+void CSQLiteRecordset::CloseUpd()
+{
+	if (m_pStmtUpd == nullptr)
+		return;
+
+	int iResult = sqlite3_finalize(m_pStmtUpd);
+	if (iResult != 0)
+		TRACE1("sqlite3_finalize() upd ret=%d\n", iResult);
+	m_pStmtUpd = nullptr;
+	m_updState = UpdState::done;
+}
 
 void CSQLiteRecordset::RFX_Gen(CFieldExchange* pFX, LPCTSTR szName, int nType, DWORD dwFlags)
 {
@@ -606,7 +618,7 @@ void CSQLiteRecordset::RFX_Bool(CFieldExchange* pFX, LPCTSTR szName, BOOL& value
 		value = 0;
 		break;
 	case FX_Task::valReadAll:
-		value = sqlite3_column_int(m_pStmt, pFX->m_nField++);
+		value = sqlite3_column_int(m_pStmtSel, pFX->m_nField++);
 		break;
 	case FX_Task::valToExport:
 		pFX->AddSQL(value == 0 ? "0" : "1");
@@ -621,9 +633,9 @@ void CSQLiteRecordset::RFX_Bool(CFieldExchange* pFX, LPCTSTR szName, BOOL& value
 	{
 		int nRC;
 		if (value != 0 || (dwFlags & FX_NN) != 0)
-			nRC = sqlite3_bind_int(m_pStmt, ++pFX->m_nField, value);
+			nRC = sqlite3_bind_int(m_pStmtUpd, ++pFX->m_nField, value);
 		else
-			nRC = sqlite3_bind_null(m_pStmt, ++pFX->m_nField);
+			nRC = sqlite3_bind_null(m_pStmtUpd, ++pFX->m_nField);
 		if (nRC != SQLITE_OK)
 			throw new CSQLiteException(m_pDB->GetLastError());
 		break;
@@ -642,7 +654,7 @@ void CSQLiteRecordset::RFX_Long(CFieldExchange* pFX, LPCTSTR szName, long& value
 		value = 0;
 		break;
 	case FX_Task::valReadAll:
-		value = sqlite3_column_int(m_pStmt, pFX->m_nField++);
+		value = sqlite3_column_int(m_pStmtSel, pFX->m_nField++);
 		break;
 	case FX_Task::valToExport:
 	{
@@ -663,9 +675,9 @@ void CSQLiteRecordset::RFX_Long(CFieldExchange* pFX, LPCTSTR szName, long& value
 			break;
 		int nRC;
 		if (value != 0 || (dwFlags & FX_NN) != 0)
-			nRC = sqlite3_bind_int(m_pStmt, ++pFX->m_nField, value);
+			nRC = sqlite3_bind_int(m_pStmtUpd, ++pFX->m_nField, value);
 		else
-			nRC = sqlite3_bind_null(m_pStmt, ++pFX->m_nField);
+			nRC = sqlite3_bind_null(m_pStmtUpd, ++pFX->m_nField);
 		if (nRC != SQLITE_OK)
 			throw new CSQLiteException(m_pDB->GetLastError());
 		break;
@@ -698,7 +710,7 @@ void CSQLiteRecordset::RFX_Text(CFieldExchange* pFX, LPCTSTR szName, CStringW& v
 		value.Empty();
 		break;
 	case FX_Task::valReadAll:
-		value = (LPCWSTR)sqlite3_column_text16(m_pStmt, pFX->m_nField++);
+		value = (LPCWSTR)sqlite3_column_text16(m_pStmtSel, pFX->m_nField++);
 		break;
 	case FX_Task::valToExport:
 	{
@@ -726,9 +738,9 @@ void CSQLiteRecordset::RFX_Text(CFieldExchange* pFX, LPCTSTR szName, CStringW& v
 	{
 		int nRC;
 		if (!value.IsEmpty() || (dwFlags & FX_NN) != 0)
-			nRC = sqlite3_bind_text16(m_pStmt, ++pFX->m_nField, (LPCWSTR)value, value.GetLength() * sizeof(WCHAR), NULL);
+			nRC = sqlite3_bind_text16(m_pStmtUpd, ++pFX->m_nField, (LPCWSTR)value, value.GetLength() * sizeof(WCHAR), NULL);
 		else
-			nRC = sqlite3_bind_null(m_pStmt, ++pFX->m_nField);
+			nRC = sqlite3_bind_null(m_pStmtUpd, ++pFX->m_nField);
 		break;
 		if (nRC != SQLITE_OK)
 			throw new CSQLiteException(m_pDB->GetLastError());
@@ -747,7 +759,7 @@ void CSQLiteRecordset::RFX_Double(CFieldExchange* pFX, LPCTSTR szName, double& v
 		value = 0.0;
 		break;
 	case FX_Task::valReadAll:
-		value = sqlite3_column_double(m_pStmt, pFX->m_nField++);
+		value = sqlite3_column_double(m_pStmtSel, pFX->m_nField++);
 		break;
 	case FX_Task::valToExport:
 	{
@@ -769,9 +781,9 @@ void CSQLiteRecordset::RFX_Double(CFieldExchange* pFX, LPCTSTR szName, double& v
 	{
 		int nRC;
 		if (value != 0.0 || (dwFlags & FX_NN) != 0)
-			nRC = sqlite3_bind_double(m_pStmt, ++pFX->m_nField, value);
+			nRC = sqlite3_bind_double(m_pStmtUpd, ++pFX->m_nField, value);
 		else
-			nRC = sqlite3_bind_null(m_pStmt, ++pFX->m_nField);
+			nRC = sqlite3_bind_null(m_pStmtUpd, ++pFX->m_nField);
 		if (nRC != SQLITE_OK)
 			throw new CSQLiteException(m_pDB->GetLastError());
 		break;
@@ -791,7 +803,7 @@ void CSQLiteRecordset::RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CDateLong& 
 		break;
 	case FX_Task::valReadAll:
 	{
-		int t = sqlite3_column_int(m_pStmt, pFX->m_nField++);
+		int t = sqlite3_column_int(m_pStmtSel, pFX->m_nField++);
 		value = CDateLong(t);
 		break;
 	}
@@ -819,9 +831,9 @@ void CSQLiteRecordset::RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CDateLong& 
 		long d = value.ToLong();
 		int nRC;
 		if (d != 0 || (dwFlags & FX_NN) != 0)
-			nRC = sqlite3_bind_int(m_pStmt, ++pFX->m_nField, d);
+			nRC = sqlite3_bind_int(m_pStmtUpd, ++pFX->m_nField, d);
 		else
-			nRC = sqlite3_bind_null(m_pStmt, ++pFX->m_nField);
+			nRC = sqlite3_bind_null(m_pStmtUpd, ++pFX->m_nField);
 		if (nRC != SQLITE_OK)
 			throw new CSQLiteException(m_pDB->GetLastError());
 		break;
@@ -841,7 +853,7 @@ void CSQLiteRecordset::RFX_DateTime(CFieldExchange* pFX, LPCTSTR szName, COleDat
 		break;
 	case FX_Task::valReadAll:
 	{
-		DATE t = sqlite3_column_double(m_pStmt, pFX->m_nField++);
+		DATE t = sqlite3_column_double(m_pStmtSel, pFX->m_nField++);
 		value = COleDateTime(t);
 		break;
 	}
@@ -886,9 +898,9 @@ void CSQLiteRecordset::RFX_DateTime(CFieldExchange* pFX, LPCTSTR szName, COleDat
 	{
 		int nRC;
 		if (value.GetStatus() == 0 && ((DATE)value != 0.0 || (dwFlags & FX_NN) != 0))
-			nRC = sqlite3_bind_double(m_pStmt, ++pFX->m_nField, (DATE)value);
+			nRC = sqlite3_bind_double(m_pStmtUpd, ++pFX->m_nField, (DATE)value);
 		else
-			nRC = sqlite3_bind_null(m_pStmt, ++pFX->m_nField);
+			nRC = sqlite3_bind_null(m_pStmtUpd, ++pFX->m_nField);
 		if (nRC != SQLITE_OK)
 			throw new CSQLiteException(m_pDB->GetLastError());
 		break;
@@ -935,9 +947,9 @@ void CSQLiteRecordset::RFX_Euro(CFieldExchange* pFX, LPCTSTR szName, CEuro& valu
 		int nRC;
 		int d = value.GetCentsRef();
 		if (d != 0 || (dwFlags & FX_NN) != 0)
-			nRC = sqlite3_bind_int(m_pStmt, ++pFX->m_nField, d);
+			nRC = sqlite3_bind_int(m_pStmtUpd, ++pFX->m_nField, d);
 		else
-			nRC = sqlite3_bind_null(m_pStmt, ++pFX->m_nField);
+			nRC = sqlite3_bind_null(m_pStmtUpd, ++pFX->m_nField);
 		if (nRC != SQLITE_OK)
 			throw new CSQLiteException(m_pDB->GetLastError());
 		break;
@@ -957,8 +969,8 @@ void CSQLiteRecordset::RFX_Blob(CFieldExchange* pFX, LPCTSTR szName, CBlob& valu
 		break;
 	case FX_Task::valReadAll:
 	{
-		DWORD dwSize = sqlite3_column_bytes(m_pStmt, pFX->m_nField);
-		value.SetData(dwSize,sqlite3_column_blob(m_pStmt, pFX->m_nField++));
+		DWORD dwSize = sqlite3_column_bytes(m_pStmtSel, pFX->m_nField);
+		value.SetData(dwSize,sqlite3_column_blob(m_pStmtSel, pFX->m_nField++));
 		break;
 	}
 	case FX_Task::valToExport:
@@ -982,9 +994,9 @@ void CSQLiteRecordset::RFX_Blob(CFieldExchange* pFX, LPCTSTR szName, CBlob& valu
 	{
 		int nRC;
 		if (!value.IsEmpty() || (dwFlags & FX_NN) != 0)
-			nRC = sqlite3_bind_blob(m_pStmt, ++pFX->m_nField, value.GetData(), value.GetSize(), NULL);
+			nRC = sqlite3_bind_blob(m_pStmtUpd, ++pFX->m_nField, value.GetData(), value.GetSize(), NULL);
 		else
-			nRC = sqlite3_bind_null(m_pStmt, ++pFX->m_nField);
+			nRC = sqlite3_bind_null(m_pStmtUpd, ++pFX->m_nField);
 		break;
 		if (nRC != SQLITE_OK)
 			throw new CSQLiteException(m_pDB->GetLastError());

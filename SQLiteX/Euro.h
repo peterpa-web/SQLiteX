@@ -10,7 +10,7 @@ public:
 	double ToDouble() { return ((double)m_nCents) / 100; }
 	long& GetCentsRef() { return m_nCents; }
 	CEuro operator +=(const CEuro& obj) { m_nCents += obj.m_nCents; return CEuro(m_nCents); }
-	bool operator ==(const CEuro& obj) { return m_nCents == obj.m_nCents; }
+	bool operator ==(const CEuro& obj) const { return m_nCents == obj.m_nCents; }
 
 protected:
 	long m_nCents = 0;
