@@ -13,6 +13,14 @@ enum class TxtFmt
 	utf8MarkGerman		// german time and number format with UTF8 BOM encoding
 };
 
+enum FX_Flags	// for create table
+{
+	FX_NN = 1,	// not null
+	FX_PK = 2,	// primary key
+	FX_AN = 4,	// autonumber
+	FX_UN = 8	// unique
+};
+
 class CSQLiteRecordset
 {
 private:
@@ -76,14 +84,6 @@ protected:
 		pkAfterInsert				// assign last rowid
 	};
 
-	enum FX_Flags	// for create table
-	{
-		FX_NN = 1,	// not null
-		FX_PK = 2,	// primary key
-		FX_AN = 4,	// autonumber
-		FX_UN = 8	// unique
-	};
-
 	class CFieldExchange
 	{
 	public:
@@ -120,6 +120,7 @@ protected:
 	void RFX_Bool(CFieldExchange* pFX, LPCTSTR szName, BOOL& value, DWORD dwFlags = 0);
 	void RFX_Long(CFieldExchange* pFX, LPCTSTR szName, long& value, DWORD dwFlags = 0);
 //	void RFX_Int(CFieldExchange* pFX, LPCTSTR szName, int& value, DWORD dwFlags = 0);
+//	void RFX_Int64(CFieldExchange* pFX, LPCTSTR szName, __int64& value, DWORD dwFlags = 0);
 	void RFX_Text(CFieldExchange* pFX, LPCTSTR szName, CStringW& value, DWORD dwFlags = 0);
 	void RFX_Double(CFieldExchange* pFX, LPCTSTR szName, double& value, DWORD dwFlags = 0);
 //	void RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CTime& value, DWORD dwFlags = 0);
@@ -128,7 +129,7 @@ protected:
 	void RFX_Euro(CFieldExchange* pFX, LPCTSTR szName, CEuro& value, DWORD dwFlags = 0);
 	void RFX_Blob(CFieldExchange* pFX, LPCTSTR szName, CBlob& value, DWORD dwFlags = 0);
 
-	CSQLiteDatabase* m_pDB;
+	CSQLiteDatabase* m_pDB = nullptr;
 	sqlite3_stmt* m_pStmtSel = nullptr;
 	sqlite3_stmt* m_pStmtUpd = nullptr;
 	int m_nParams = 0;
