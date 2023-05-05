@@ -12,6 +12,7 @@ public:
 	static int GetDefaultType(int nSqlType);
 	static int GetSqlType(const CString& strType);
 	static CString GetSqlType(int nType);
+	static LPCSTR GetDescr(int nType) { return s_aTypes[nType].m_pszDescr; }
 	static DWORD GetFlags(int nType) { return s_aTypes[nType].m_dwFlags; }
 
 protected:

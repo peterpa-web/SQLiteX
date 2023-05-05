@@ -82,8 +82,6 @@ BEGIN_MESSAGE_MAP(CSQLiteClassGenDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_SEL_TARGET_PATH, &CSQLiteClassGenDlg::OnClickedButtonSelTargetPath)
 	ON_BN_CLICKED(IDC_BUTTON_CREATE_FILES, &CSQLiteClassGenDlg::OnClickedButtonCreateFiles)
 	ON_BN_CLICKED(IDC_BUTTON_REMOVE_CLASS, &CSQLiteClassGenDlg::OnClickedButtonRemoveClass)
-	ON_LBN_SELCHANGE(IDC_LIST_TABLES, &CSQLiteClassGenDlg::OnLbnSelchangeListTables)
-	ON_LBN_SELCHANGE(IDC_LIST_FIELDS, &CSQLiteClassGenDlg::OnLbnSelchangeListFields)
 	ON_EN_CHANGE(IDC_EDIT_CLASS_NAME, &CSQLiteClassGenDlg::OnEnChangeEditClassName)
 	ON_CBN_SELCHANGE(IDC_COMBO_FIELD_TYPE, &CSQLiteClassGenDlg::OnCbnSelchangeComboFieldType)
 	ON_BN_CLICKED(IDC_CHECK_NN, &CSQLiteClassGenDlg::OnBnClickedCheckNN)
@@ -92,6 +90,8 @@ BEGIN_MESSAGE_MAP(CSQLiteClassGenDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_CHECK_UN, &CSQLiteClassGenDlg::OnBnClickedCheckUN)
 	ON_EN_CHANGE(IDC_EDIT_VAR_NAME, &CSQLiteClassGenDlg::OnEnChangeEditVarName)
 	ON_EN_CHANGE(IDC_EDIT_FILE_NAME, &CSQLiteClassGenDlg::OnEnChangeEditFileName)
+	ON_NOTIFY(LVN_ITEMCHANGED, IDC_LIST_TABLES, &CSQLiteClassGenDlg::OnLvnItemchangedListTables)
+	ON_NOTIFY(LVN_ITEMCHANGED, IDC_LIST_FIELDS, &CSQLiteClassGenDlg::OnLvnItemchangedListFields)
 END_MESSAGE_MAP()
 
 
@@ -102,7 +102,7 @@ void CSQLiteClassGenDlg::ResetTableData()
 	m_pTable = nullptr;
 	m_editClassName.SetWindowText(L"");
 	m_editFileName.SetWindowText(L"");
-	m_listFields.ResetContent();
+	m_listFields.DeleteAllItems();
 	ResetFieldData();
 }
 
@@ -112,17 +112,20 @@ void CSQLiteClassGenDlg::ResetFieldData()
 	m_editVarName.SetWindowText(L"");
 	m_pField = nullptr;
 	m_nFktType = -1;
+	m_nFieldFocus = -1;
 }
 
 void CSQLiteClassGenDlg::ShowTables()
 {
-	m_listTables.ResetContent();
+	m_listTables.DeleteAllItems();
 	ResetTableData();
 	CSQLiteTable* pT = m_schema.GetFirstTable();
+	int i = 0;
 	while (pT != nullptr)
 	{
-		int n = m_listTables.AddString(pT->m_TblName + L" " + pT->m_ClassName);
-		m_listTables.SetItemData(n, (DWORD_PTR)pT);
+		int n = m_listTables.InsertItem(i, pT->m_TblName);
+		m_listTables.SetItemText(i, 1, pT->m_ClassName);
+		m_listTables.SetItemData(i++, (DWORD_PTR)pT);
 		pT = m_schema.GetNextTable();
 	}
 }
@@ -234,10 +237,17 @@ BOOL CSQLiteClassGenDlg::OnInitDialog()
 
 	// Symbol für dieses Dialogfeld festlegen.  Wird automatisch erledigt
 	//  wenn das Hauptfenster der Anwendung kein Dialogfeld ist
-	SetIcon(m_hIcon, TRUE);			// Großes Symbol verwenden
+	SetIcon(m_hIcon, TRUE);		// Großes Symbol verwenden
 	SetIcon(m_hIcon, FALSE);		// Kleines Symbol verwenden
 
 	// TODO: Hier zusätzliche Initialisierung einfügen
+
+	m_listTables.InsertColumn(0, _T("Name"), LVCFMT_LEFT, 120);
+	m_listTables.InsertColumn(1, _T("Klasse"), LVCFMT_LEFT, 125, 1);
+
+	m_listFields.InsertColumn(0, _T("Name"), LVCFMT_LEFT, 120);
+	m_listFields.InsertColumn(1, _T("SQL"), LVCFMT_LEFT, 60, 1);
+	m_listFields.InsertColumn(2, _T("CPP"), LVCFMT_LEFT, 155, 2);
 
 	ShowFlags(0, 0);
 	m_buttonCreateFiles.EnableWindow(FALSE);
@@ -317,7 +327,7 @@ void CSQLiteClassGenDlg::OnClickedButtonSelTargetPath()
 		m_strTargetPath = dlg.GetPathName();
 		m_editTargetPath.SetWindowText(m_strTargetPath);
 	}
-	m_buttonCreateFiles.EnableWindow(m_listTables.GetCount() != 0);
+	m_buttonCreateFiles.EnableWindow(m_pTable != nullptr);
 }
 
 
@@ -344,36 +354,9 @@ void CSQLiteClassGenDlg::OnClickedButtonRemoveClass()
 	m_pTable->m_FileName.Empty();
 	m_editClassName.SetWindowText(L"");
 	m_editFileName.SetWindowText(L"");
-	int n = m_listTables.GetCurSel();
-	CString str = m_pTable->m_TblName + L" " + m_pTable->m_ClassName;
-	m_listTables.SetDlgItemText(n, str);
-}
-
-
-void CSQLiteClassGenDlg::OnLbnSelchangeListTables()
-{
-	int n = m_listTables.GetCurSel();
-	if (n < 0)
-		return;
-
-	m_pTable = (CSQLiteTable*)m_listTables.GetItemData(n);
-	m_editClassName.SetWindowText(m_pTable->m_ClassName);
-	m_editFileName.SetWindowText(m_pTable->m_FileName);
-	ShowFields();
-}
-
-
-void CSQLiteClassGenDlg::OnLbnSelchangeListFields()
-{
-	int n = m_listFields.GetCurSel();
-	if (n < 0)
-		return;
-
-	m_pField = (CSQLiteField*)m_listFields.GetItemData(n);
-	m_nFktType = m_pField->m_nFktType;
-	CSQLiteTypes::FillCombo(m_comboFieldType, m_pField->m_nSqlType, m_nFktType);
-	m_editVarName.SetWindowText(m_pField->m_strVarName);
-	ShowFlags(m_pField->m_dwFlags, CSQLiteTypes::GetFlags(m_nFktType));
+//	int n = m_listTables.GetCurSel();
+//	CString str = m_pTable->m_TblName + L" " + m_pTable->m_ClassName;
+//	m_listTables.SetDlgItemText(n, str);
 }
 
 
@@ -384,11 +367,7 @@ void CSQLiteClassGenDlg::OnEnChangeEditClassName()
 
 	m_editClassName.GetWindowText(m_pTable->m_ClassName);
 	m_pTable->m_FileName = m_pTable->m_ClassName.Mid(1);
-//	int n = m_listTables.GetCurSel();
-//	CString str = m_pTable->m_TblName + L" " + m_pTable->m_ClassName;
-//	m_listTables.DeleteString(n);
-//	int i = m_listTables.InsertString(n, str);
-//	m_listTables.SetItemDataPtr(i, m_pTable);
+	m_listTables.SetItemText(m_nTableFocus, 1, m_pTable->m_ClassName);
 }
 
 
@@ -397,6 +376,7 @@ void CSQLiteClassGenDlg::OnCbnSelchangeComboFieldType()
 	int n = m_comboFieldType.GetCurSel();
 	m_nFktType = m_pField->m_nFktType = m_comboFieldType.GetItemData(n);
 	ShowFlags(m_pField->m_dwFlags, CSQLiteTypes::GetFlags(m_nFktType));
+	m_listFields.SetItemText(m_nFieldFocus, 2, m_pField->GetDescr());
 }
 
 
@@ -439,4 +419,37 @@ void CSQLiteClassGenDlg::OnEnChangeEditFileName()
 {
 	if (m_pTable != nullptr)
 		m_editFileName.GetWindowText(m_pTable->m_FileName);
+}
+
+
+void CSQLiteClassGenDlg::OnLvnItemchangedListTables(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+	if ((pNMLV->uOldState & LVIS_FOCUSED) !=
+		(pNMLV->uNewState & LVIS_FOCUSED))
+	{
+		m_nTableFocus = pNMLV->iItem;
+		m_pTable = (CSQLiteTable*)m_listTables.GetItemData(pNMLV->iItem);
+		m_editClassName.SetWindowText(m_pTable->m_ClassName);
+		m_editFileName.SetWindowText(m_pTable->m_FileName);
+		ShowFields();
+	}
+	*pResult = 0;
+}
+
+
+void CSQLiteClassGenDlg::OnLvnItemchangedListFields(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+	if ((pNMLV->uOldState & LVIS_FOCUSED) !=
+		(pNMLV->uNewState & LVIS_FOCUSED))
+	{
+		m_nFieldFocus = pNMLV->iItem;
+		m_pField = (CSQLiteField*)m_listFields.GetItemData(pNMLV->iItem);
+		m_nFktType = m_pField->m_nFktType;
+		CSQLiteTypes::FillCombo(m_comboFieldType, m_pField->m_nSqlType, m_nFktType);
+		m_editVarName.SetWindowText(m_pField->m_strVarName);
+		ShowFlags(m_pField->m_dwFlags, CSQLiteTypes::GetFlags(m_nFktType));
+	}
+	*pResult = 0;
 }

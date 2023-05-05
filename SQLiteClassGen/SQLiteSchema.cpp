@@ -104,15 +104,18 @@ void CSQLiteTable::ParseFields(const CString& strFields)
 	}
 }
 
-void CSQLiteTable::FillList(CListBox& list)
+void CSQLiteTable::FillList(CListCtrl& list)
 {
-	list.ResetContent();
+	list.DeleteAllItems();
 	POSITION pos = m_fields.GetHeadPosition();
+	int i = 0;
 	while (pos != NULL)
 	{
 		CSQLiteField& f = m_fields.GetNext(pos);
-		int n = list.AddString(f.m_SqlName + L" " + f.m_SqlTypeRaw);
-		list.SetItemData(n, (DWORD_PTR) &f);
+		int n = list.InsertItem(i, f.m_SqlName);
+		list.SetItemText(i, 1, f.m_SqlTypeRaw);
+		list.SetItemText(i, 2, f.GetDescr());
+		list.SetItemData(i++, (DWORD_PTR) &f);
 	}
 }
 

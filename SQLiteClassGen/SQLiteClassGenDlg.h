@@ -30,6 +30,8 @@ protected:
 	CSQLiteField* m_pField = nullptr;
 	int m_nFktType = -1;
 	CString m_strTargetPath;
+	int m_nTableFocus = -1;
+	int m_nFieldFocus = -1;
 
 	void ResetTableData();
 	void ResetFieldData();
@@ -50,8 +52,9 @@ public:
 	CEdit m_editTargetPath;
 	CEdit m_editClassName;
 	CEdit m_editFileName;
-	CListBox m_listTables;
-	CListBox m_listFields;
+	CEdit m_editVarName;
+	CListCtrl m_listTables;
+	CListCtrl m_listFields;
 	CComboBox m_comboFieldType;
 	CButton m_checkNN;
 	CButton m_checkPK;
@@ -62,15 +65,14 @@ public:
 	afx_msg void OnClickedButtonSelTargetPath();
 	afx_msg void OnClickedButtonCreateFiles();
 	afx_msg void OnClickedButtonRemoveClass();
-	afx_msg void OnLbnSelchangeListTables();
-	afx_msg void OnLbnSelchangeListFields();
 	afx_msg void OnEnChangeEditClassName();
 	afx_msg void OnCbnSelchangeComboFieldType();
 	afx_msg void OnBnClickedCheckNN();
 	afx_msg void OnBnClickedCheckPK();
 	afx_msg void OnBnClickedCheckAN();
 	afx_msg void OnBnClickedCheckUN();
-	CEdit m_editVarName;
 	afx_msg void OnEnChangeEditVarName();
 	afx_msg void OnEnChangeEditFileName();
+	afx_msg void OnLvnItemchangedListTables(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnLvnItemchangedListFields(NMHDR* pNMHDR, LRESULT* pResult);
 };

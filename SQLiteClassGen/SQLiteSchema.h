@@ -15,6 +15,7 @@ public:
 	void SetDefaultType();
 	void SetFlags(const CString& strFlags);
 	CString GetSqlTypeString() { return CSQLiteTypes::GetSqlType(m_nSqlType); }
+	CString GetDescr() { return CString(CSQLiteTypes::GetDescr(m_nFktType)); }
 	CString GetDef();
 	CString GetFunction();
 };
@@ -28,7 +29,7 @@ public:
 	CList<CSQLiteField> m_fields;
 
 	void ParseFields(const CString& strFields);
-	void FillList(CListBox& list);
+	void FillList(CListCtrl& list);
 	void GetIncludes(CStringList& list);
 	void GetDefs(CStringList& list);
 	void GetFunctions(CStringList& list);
