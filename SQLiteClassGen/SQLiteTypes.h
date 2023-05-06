@@ -4,7 +4,7 @@
 class CSQLiteTypes
 {
 public:
-	static const int s_nTypes = 8;
+	static const int s_nTypes = 9;
 	static void FillCombo(CComboBox& combo, int nSqlType, int nFktType);
 	static LPCSTR GetInclude(int nType) { return s_aTypes[nType].m_pszInclude; }
 	static CString GetDeclLine(int nType, const CString& strVarName);

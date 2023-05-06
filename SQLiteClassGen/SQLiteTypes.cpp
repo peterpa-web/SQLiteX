@@ -1,14 +1,15 @@
 #include "pch.h"
 #include "SQLiteTypes.h"
 
-CSQLiteTypes::CTypeInt CSQLiteTypes::s_aTypes[8] = {
-	{ 1, "long",	"long (default)",	nullptr, "RFX_Long",	FX_NN | FX_PK | FX_AN | FX_UN },
+CSQLiteTypes::CTypeInt CSQLiteTypes::s_aTypes[s_nTypes] = {
+	{ 1, "long",	"long",	nullptr, "RFX_Long",	FX_NN | FX_PK | FX_AN | FX_UN },
 //	{ 1, "__int64", "__int64",			nullptr, "RFX_Int64",	FX_NN | FX_PK | FX_AN | FX_UN },
 	{ 1, "bool",	"bool",				nullptr, "RFX_Bool",	0 },
-	{ 1, "CDateLong", "CDateLong (long)", "DateLong.h", "RFX_Date", FX_NN | FX_UN },
-	{ 1, "CEuro",	"CEuro (long)",	"Euro.h", "RFX_Euro",	FX_NN | FX_UN },
-	{ 2, "double",	"double (default)", nullptr, "RFX_Double",	FX_NN | FX_UN },
-	{ 2, "COleDateTime", "COleDataTime (float)", nullptr, "RFX_DateTime", FX_NN | FX_UN },
+	{ 1, "CTime", "CTime >= 1970", nullptr, "RFX_Time", FX_NN | FX_UN },
+	{ 1, "CDateLong", "CDateLong (YYYYMMDD)", "DateLong.h", "RFX_Date", FX_NN | FX_UN },
+	{ 1, "CEuro",	"CEuro (Cents)",	"Euro.h", "RFX_Euro",	FX_NN | FX_UN },
+	{ 2, "double",	"double", nullptr, "RFX_Double",	FX_NN | FX_UN },
+	{ 2, "COleDateTime", "COleDataTime (Gregorian)", nullptr, "RFX_DateTime", FX_NN | FX_UN },
 	{ 3, "CString",	"CString",			nullptr, "RFX_Text",	FX_NN | FX_UN },
 	{ 4, "CBlob",	"CBlob",			nullptr, "RFX_Blob",	FX_NN }
 };
@@ -83,6 +84,9 @@ int CSQLiteTypes::GetSqlType(const CString& strType)
 	s = s.MakeLower();
 	if (s.Compare(L"boolean") == 0)
 		return 1;		// integer
+
+	if (s.Compare(L"float") == 0)
+		return 2;		// real
 
 	if (s.Left(7).Compare(L"varchar") == 0)
 		return 3;		// text

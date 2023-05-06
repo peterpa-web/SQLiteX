@@ -66,7 +66,7 @@ public:
 protected:
 	enum class UpdState
 	{
-		done, addNew, edit
+		done, addNew, edit, importing
 	} m_updState = UpdState::done;
 
 	enum class FX_Task
@@ -126,6 +126,7 @@ protected:
 //	void RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CTime& value, DWORD dwFlags = 0);
 	void RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CDateLong& value, DWORD dwFlags = 0);
 	void RFX_DateTime(CFieldExchange* pFX, LPCTSTR szName, COleDateTime& value, DWORD dwFlags = 0);
+	void RFX_Time(CFieldExchange* pFX, LPCTSTR szName, CTime& value, DWORD dwFlags = 0);
 	void RFX_Euro(CFieldExchange* pFX, LPCTSTR szName, CEuro& value, DWORD dwFlags = 0);
 	void RFX_Blob(CFieldExchange* pFX, LPCTSTR szName, CBlob& value, DWORD dwFlags = 0);
 

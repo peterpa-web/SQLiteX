@@ -27,7 +27,10 @@ void CSQLiteSchema::ReadAll(const CString& strDbPath)
 	{
 		CSQLiteTable* pT = new CSQLiteTable;
 		pT->m_TblName = schemaInt.m_TblName;
-		pT->m_FileName = pT->m_TblName.Left(1).MakeUpper() + pT->m_TblName.Mid(1);
+		CString strName = pT->m_TblName;
+		if (strName[0] == '[')
+			strName = strName.Mid(1, strName.GetLength() - 2);
+		pT->m_FileName = strName.Left(1).MakeUpper() + strName.Mid(1);
 		pT->m_ClassName = 'C' + pT->m_FileName;
 		CString strSql = schemaInt.m_Sql;
 		int p = 0;
@@ -86,6 +89,8 @@ void CSQLiteTable::ParseFields(const CString& strFields)
 		strField = strField.Trim();
 		if (strField.Left(11).CompareNoCase(L"PRIMARY KEY") == 0)
 			return;
+		if (strField.Left(11).CompareNoCase(L"FOREIGN KEY") == 0)
+			return;
 
 		CSQLiteField field;
 		int q = 0;
@@ -93,7 +98,10 @@ void CSQLiteTable::ParseFields(const CString& strFields)
 		field.m_SqlTypeRaw = strField.Tokenize(L" ", q);
 		field.m_nSqlType = CSQLiteTypes::GetSqlType(field.m_SqlTypeRaw);
 		field.SetDefaultType();
-		field.m_strVarName = L"m_" + field.m_SqlName;
+		CString strName = field.m_SqlName;
+		if (strName[0] == '[')
+			strName = strName.Mid(1, strName.GetLength() - 2);
+		field.m_strVarName = L"m_" + strName;
 		if (q > 0)
 		{
 			CString strFlags = strField.Tokenize(L")", q);
