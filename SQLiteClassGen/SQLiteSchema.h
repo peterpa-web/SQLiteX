@@ -30,7 +30,6 @@ public:
 
 	void ParseFields(const CString& strFields);
 	void FillList(CListCtrl& list);
-	void GetIncludes(CStringList& list);
 	void GetDefs(CStringList& list);
 	void GetFunctions(CStringList& list);
 };

@@ -30,7 +30,7 @@ void CSQLiteSchema::ReadAll(const CString& strDbPath)
 		CString strName = pT->m_TblName;
 		if (strName[0] == '[')
 			strName = strName.Mid(1, strName.GetLength() - 2);
-		pT->m_FileName = strName.Left(1).MakeUpper() + strName.Mid(1);
+		pT->m_FileName = L"Rec" + strName.Left(1).MakeUpper() + strName.Mid(1);
 		pT->m_ClassName = 'C' + pT->m_FileName;
 		CString strSql = schemaInt.m_Sql;
 		int p = 0;
@@ -124,29 +124,6 @@ void CSQLiteTable::FillList(CListCtrl& list)
 		list.SetItemText(i, 1, f.m_SqlTypeRaw);
 		list.SetItemText(i, 2, f.GetDescr());
 		list.SetItemData(i++, (DWORD_PTR) &f);
-	}
-}
-
-void CSQLiteTable::GetIncludes(CStringList& list)
-{
-	POSITION posF = m_fields.GetHeadPosition();
-	while (posF != NULL)
-	{
-		CSQLiteField& f = m_fields.GetNext(posF);
-		LPCSTR psz = CSQLiteTypes::GetInclude(f.m_nFktType);
-		if (psz == nullptr)
-			continue;
-
-		CString strI(psz);
-		POSITION posI = list.GetHeadPosition();
-		while (posI != NULL)
-		{
-			CString s = list.GetNext(posI);
-			if (s == strI)
-				break;
-		}
-		if (posI == NULL)	// not found
-			list.AddTail(strI);
 	}
 }
 

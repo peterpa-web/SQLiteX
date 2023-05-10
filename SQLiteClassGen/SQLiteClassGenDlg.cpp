@@ -154,27 +154,16 @@ void CSQLiteClassGenDlg::WriteHeaderFile(CSQLiteTable* pTable)
 	CString strPath = m_strTargetPath + L"\\" + pTable->m_FileName + L".h";
 	CStdioFile file(strPath, CFile::modeWrite | CFile::modeCreate);
 	file.WriteString(L"#pragma once\n");
-	// write includes
-	CStringList listIncludes;
-	pTable->GetIncludes(listIncludes);
-	POSITION pos = listIncludes.GetHeadPosition();
-	while (pos != NULL)
-	{
-		CString s = listIncludes.GetNext(pos);
-		file.WriteString(s + L"\n");
-	}
-	file.WriteString(L"\nclass CCompanyRec :\n"
-		L"    public ");
-	file.WriteString(pTable->m_ClassName);
-	file.WriteString(L"\n{\n"
-		L"public:\n"
-		L"    CCompanyRec(CSQLiteDatabase * pDatabase = nullptr);\n");
+	file.WriteString(L"#include \"SQLiteRecordset.h\"\n\n");
+	file.WriteString(L"class " + pTable->m_ClassName + L" :\n"
+		L"    public CSQLiteRecordset\n"
+		L"{\n");
+	file.WriteString(L"public:\n"
+		L"    " + pTable->m_ClassName + L"(CSQLiteDatabase* pDatabase = nullptr);\n");
 	// write vars
-	//	long	m_CompID = 0;
-	//	CString	m_CompName;
 	CStringList listVars;
 	pTable->GetDefs(listVars);
-	pos = listVars.GetHeadPosition();
+	POSITION pos = listVars.GetHeadPosition();
 	while (pos != NULL)
 	{
 		CString s = listVars.GetNext(pos);
@@ -242,9 +231,11 @@ BOOL CSQLiteClassGenDlg::OnInitDialog()
 
 	// TODO: Hier zusätzliche Initialisierung einfügen
 
+	m_listTables.SetExtendedStyle(LVS_EX_FULLROWSELECT);
 	m_listTables.InsertColumn(0, _T("Name"), LVCFMT_LEFT, 120);
 	m_listTables.InsertColumn(1, _T("Klasse"), LVCFMT_LEFT, 125, 1);
 
+	m_listFields.SetExtendedStyle(LVS_EX_FULLROWSELECT);
 	m_listFields.InsertColumn(0, _T("Name"), LVCFMT_LEFT, 120);
 	m_listFields.InsertColumn(1, _T("SQL"), LVCFMT_LEFT, 60, 1);
 	m_listFields.InsertColumn(2, _T("CPP"), LVCFMT_LEFT, 155, 2);
@@ -367,6 +358,7 @@ void CSQLiteClassGenDlg::OnEnChangeEditClassName()
 
 	m_editClassName.GetWindowText(m_pTable->m_ClassName);
 	m_pTable->m_FileName = m_pTable->m_ClassName.Mid(1);
+	m_editFileName.SetWindowText(m_pTable->m_FileName);
 	m_listTables.SetItemText(m_nTableFocus, 1, m_pTable->m_ClassName);
 }
 
