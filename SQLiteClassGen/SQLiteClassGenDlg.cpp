@@ -170,8 +170,8 @@ void CSQLiteClassGenDlg::WriteHeaderFile(CSQLiteTable* pTable)
 		file.WriteString(L"    " + s + L"\n");
 	}
 	file.WriteString(L"\npublic:\n"
-		L"	  virtual CString GetDefaultSQL();    // Default SQL for Recordset\n"
-		L"	  virtual void DoFieldExchange(CFieldExchange * pFX);  // RFX support\n"
+		L"    virtual CString GetDefaultSQL();    // Default SQL for Recordset\n"
+		L"    virtual void DoFieldExchange(CFieldExchange * pFX);  // RFX support\n"
 		L"};\n");
 }
 

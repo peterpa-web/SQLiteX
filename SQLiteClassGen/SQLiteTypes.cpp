@@ -2,16 +2,17 @@
 #include "SQLiteTypes.h"
 
 CSQLiteTypes::CTypeInt CSQLiteTypes::s_aTypes[s_nTypes] = {
-	{ 1, "long",	"long",	"RFX_Long",	FX_NN | FX_PK | FX_AN | FX_UN },
-//	{ 1, "__int64", "__int64",			"RFX_Int64",	FX_NN | FX_PK | FX_AN | FX_UN },
-	{ 1, "bool",	"bool",				"RFX_Bool",	0 },
-	{ 1, "CTime", "CTime >= 1970",		"RFX_Time", FX_NN | FX_UN },
+	{ 1, "__int64", "__int64",			"RFX_Int64",	FX_NN | FX_PK | FX_AN | FX_UN },
+	{ 1, "long",	"long",				"RFX_Long",		FX_NN | FX_PK | FX_AN | FX_UN },
+	{ 1, "bool",	"bool",				"RFX_Bool",		0 },
+	{ 1, "CTime", "CTime s >= 1970",	"RFX_Time",		FX_NN | FX_UN },
+	{ 1, "CTimeJava", "CTime ms >= 1970", "RFX_TimeJava", FX_NN | FX_UN },
 	{ 1, "CDateLong", "CDateLong (YYYYMMDD)", "RFX_Date", FX_NN | FX_UN },
-	{ 1, "CEuro",	"CEuro (Cents)",	"RFX_Euro",	FX_NN | FX_UN },
+	{ 1, "CEuro",	"CEuro (Cents)",	"RFX_Euro",		FX_NN | FX_UN },
 	{ 2, "double",	"double", 			"RFX_Double",	FX_NN | FX_UN },
 	{ 2, "COleDateTime", "COleDataTime", "RFX_DateTime", FX_NN | FX_UN },
-	{ 3, "CString",	"CString",			"RFX_Text",	FX_NN | FX_UN },
-	{ 4, "CBlob",	"CBlob",			"RFX_Blob",	FX_NN }
+	{ 3, "CStringW", "CStringW",		"RFX_Text",		FX_NN | FX_UN },
+	{ 4, "CBlob",	"CBlob",			"RFX_Blob",		FX_NN }
 };
 
 WCHAR* CSQLiteTypes::s_aszSqlTypes[5] = { L"-", L"integer", L"real", L"text", L"blob" };

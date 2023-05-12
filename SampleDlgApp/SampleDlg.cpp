@@ -378,7 +378,6 @@ void CSampleDlg::OnBnClickedEditComp()
 	if (nRc != IDOK)
 		return;
 
-	cr.Close();
 	cr.Edit();
 	cr.m_CompName = dlg.m_strCompName;
 	cr.Update();
@@ -446,7 +445,6 @@ void CSampleDlg::OnBnClickedEditEmpl()
 	if (nRc != IDOK)
 		return;
 
-	er.Close();
 	er.Edit();
 	er.m_FirstName = dlg.m_strFirstName;
 //	CStringA strData(dlg.m_strBirthday);

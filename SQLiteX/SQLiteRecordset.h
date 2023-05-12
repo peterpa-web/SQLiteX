@@ -21,6 +21,14 @@ enum FX_Flags	// for create table
 	FX_UN = 8	// unique
 };
 
+class CTimeJava
+{
+public:
+	CTime m_time;
+	int m_nMillis = 0;
+	bool operator ==(const CTimeJava& t) { return m_time == t.m_time && m_nMillis == t.m_nMillis; }
+};
+
 class CSQLiteRecordset
 {
 private:
@@ -97,7 +105,7 @@ protected:
 			inoutParam = 3		// SQL_PARAM_INPUT_OUTPUT,
 		};
 
-		CFieldExchange(FX_Task t) : m_task(t) {}
+		CFieldExchange(FX_Task t) : m_task(t) { m_aSkip.SetSize(0, 64); }
 		void SetFieldType(UINT nFieldType) { m_nFieldType = nFieldType; }
 		void AddSQL(LPCSTR psz, char cSep = 0);
 		void AddSQL(LPCWSTR psz) { AddSQL(ToUtf8(psz)); }
@@ -109,24 +117,25 @@ protected:
 		char m_cSQLSep = ',';
 		CStringA m_utf8SQL;
 		CStringA m_strImportLine;
-		int m_nStartField = 0;	// position in import line
-//		long m_nRowId = 0;
+		int m_nStartField = 0;	// position in import line or bind
 		TxtFmt m_fmt = TxtFmt::standard;
 		bool m_bSkipPk = false;
+		CByteArray m_aSkip;
 	};
 
 	virtual CString GetDefaultSQL() = 0;		// Default SQL for Recordset -> table name
 	virtual void DoFieldExchange(CFieldExchange* pFX) = 0;
 	void RFX_Bool(CFieldExchange* pFX, LPCTSTR szName, BOOL& value, DWORD dwFlags = 0);
+	void RFX_Int64(CFieldExchange* pFX, LPCTSTR szName, __int64& value, DWORD dwFlags = 0);
 	void RFX_Long(CFieldExchange* pFX, LPCTSTR szName, long& value, DWORD dwFlags = 0);
 //	void RFX_Int(CFieldExchange* pFX, LPCTSTR szName, int& value, DWORD dwFlags = 0);
-//	void RFX_Int64(CFieldExchange* pFX, LPCTSTR szName, __int64& value, DWORD dwFlags = 0);
 	void RFX_Text(CFieldExchange* pFX, LPCTSTR szName, CStringW& value, DWORD dwFlags = 0);
 	void RFX_Double(CFieldExchange* pFX, LPCTSTR szName, double& value, DWORD dwFlags = 0);
 //	void RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CTime& value, DWORD dwFlags = 0);
 	void RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CDateLong& value, DWORD dwFlags = 0);
 	void RFX_DateTime(CFieldExchange* pFX, LPCTSTR szName, COleDateTime& value, DWORD dwFlags = 0);
 	void RFX_Time(CFieldExchange* pFX, LPCTSTR szName, CTime& value, DWORD dwFlags = 0);
+	void RFX_TimeJava(CFieldExchange* pFX, LPCTSTR szName, CTimeJava& value, DWORD dwFlags = 0);
 	void RFX_Euro(CFieldExchange* pFX, LPCTSTR szName, CEuro& value, DWORD dwFlags = 0);
 	void RFX_Blob(CFieldExchange* pFX, LPCTSTR szName, CBlob& value, DWORD dwFlags = 0);
 
