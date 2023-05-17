@@ -1454,3 +1454,18 @@ CStringA CSQLiteRecordset::CFieldExchange::NextImportField()
 		return m_strImportLine.Mid(s);
 	}
 }
+
+CStringA CTimeJava::ToStringGmt()
+{
+	CStringA s;
+	s.Format("%3.3dZ", m_nMillis);
+	s = CStringA(m_time.FormatGmt("%Y-%m-%dT%H:%M:%S.")) + s;
+	return s;
+}
+
+CStringA CTimeJava::ToStringTimeDate()
+{
+	CStringA s;
+	s = CStringA(m_time.Format("%H:%M %d.%m.%Y"));
+	return s;
+}

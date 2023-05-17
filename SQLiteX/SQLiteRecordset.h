@@ -27,6 +27,8 @@ public:
 	CTime m_time;
 	int m_nMillis = 0;
 	bool operator ==(const CTimeJava& t) { return m_time == t.m_time && m_nMillis == t.m_nMillis; }
+	CStringA ToStringGmt();
+	CStringA ToStringTimeDate();
 };
 
 class CSQLiteRecordset
