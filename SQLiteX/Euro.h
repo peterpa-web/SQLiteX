@@ -6,6 +6,7 @@ public:
 	CEuro(long nCents) { m_nCents = nCents; }
 	CEuro(double e);
 	CString ToString();			// euro,cents
+	CString ToStringDots();		// xxx.euro,cents
 	void FromString(const CStringA& str);	// read cents or euro if containing '.' or ','
 	double ToDouble() { return ((double)m_nCents) / 100; }
 	long& GetCentsRef() { return m_nCents; }
