@@ -46,3 +46,20 @@ void CEuro::FromString(const CStringA& str)
         m_nCents = atol(str);
 }
 
+bool CEuro::IsInRange(int nPercent, const CEuro& obj) const
+{
+    long nDelta = nPercent * m_nCents / 100;
+    long nMin = m_nCents;
+    long nMax = m_nCents;
+    if (m_nCents >= 0)
+    {
+        nMin -= nDelta;
+        nMax += nDelta;
+    }
+    else {
+        nMin += nDelta;
+        nMax -= nDelta;
+    }
+    return obj.m_nCents >= nMin && obj.m_nCents <= nMax;
+}
+

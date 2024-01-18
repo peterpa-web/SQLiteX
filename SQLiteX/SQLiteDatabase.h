@@ -40,7 +40,7 @@ public:
 	DECLARE_DYNAMIC(CSQLiteException)
 	CSQLiteException(LPCTSTR lpszErrorText, BOOL bAutoDelete = TRUE);
 	CSQLiteException(LPCSTR lpszErrorText, BOOL bAutoDelete = TRUE);
-	virtual ~CSQLiteException() {}
+//	virtual ~CSQLiteException() {}
 	virtual BOOL GetErrorMessage(
 		LPTSTR lpszError, UINT nMaxError,
 		PUINT pnHelpContext) const;
