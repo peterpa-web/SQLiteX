@@ -94,7 +94,11 @@ void CSQLiteTable::ParseFields(const CString& strFields)
 
 		CSQLiteField field;
 		int q = 0;
-		field.m_SqlName = strField.Tokenize(L" ", q);
+		field.m_SqlName = strField.Tokenize(L" \t", q);
+		if (field.m_SqlName[0] == '\"')
+		{
+			field.m_SqlName = field.m_SqlName.Mid(1, field.m_SqlName.GetLength() - 2);
+		}
 		field.m_SqlTypeRaw = strField.Tokenize(L" ", q);
 		field.m_nSqlType = CSQLiteTypes::GetSqlType(field.m_SqlTypeRaw);
 		field.SetDefaultType();

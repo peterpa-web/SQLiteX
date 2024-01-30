@@ -94,7 +94,7 @@ int CSQLiteTypes::GetSqlType(const CString& strType)
 
 	for (int i = 1; i < 5; i++)
 	{
-		if (s.Compare(s_aszSqlTypes[i]) == 0)
+		if (s.CompareNoCase(s_aszSqlTypes[i]) == 0)
 			return i;
 	}
 	ASSERT(FALSE);
