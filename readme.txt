@@ -4,7 +4,8 @@ classes CDatabase & CRecordset without using any ODBC driver.
 Currently the most relevant features are implemented.
 
 Please add manually the required original SQLite source files sqlite3.c and sqlite3.h
-to the project folder SQLiteX by downloading the amalgamation source zip from sqlite.org
+to the project folder SQLiteX by downloading the amalgamation source zip from 
+https://sqlite.org/download.html
 
 Additionally some helper classes are implementing Euro currency as long type and Date as
 long type where its decimal representation directly shows a readable date.

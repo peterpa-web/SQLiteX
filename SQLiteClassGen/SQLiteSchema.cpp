@@ -37,7 +37,8 @@ void CSQLiteSchema::ReadAll(const CString& strDbPath)
 		CString strStart = strSql.Tokenize(L"(", p);
 		if (p > 0)
 		{
-			CString strFields = strSql.Tokenize(L")", p);
+//			CString strFields = strSql.Tokenize(L")", p);
+			CString strFields = strSql.Mid( p, strSql.GetLength() - p - 1);
 			pT->ParseFields(strFields);
 		}
 		m_tables.AddTail(pT);
@@ -83,28 +84,59 @@ void CSQLiteSchemaInt::DoFieldExchange(CFieldExchange* pFX)
 void CSQLiteTable::ParseFields(const CString& strFields)
 {
 	int p = 0;
-	CString strField = strFields.Tokenize(L",", p);
-	while (!strField.IsEmpty())
+	CString strField;;
+	while (!(strField = strFields.Tokenize(L",(", p)).IsEmpty())
 	{
 		strField = strField.Trim();
 		if (strField.Left(11).CompareNoCase(L"PRIMARY KEY") == 0)
-			return;
+		{
+			CString strField2 = strFields.Tokenize(L")", p);
+			if (strField2.Find(',') < 0)
+			{
+				CSQLiteField* pF = FindField(strField2);
+				if (pF != nullptr)
+				{
+					pF->m_dwFlags |= FX_PK;
+					continue;
+				}
+			}
+			AddContraints(strField + '(' + strField2 + ')');
+			continue;
+		}
+		if (strField.Left(6).CompareNoCase(L"UNIQUE") == 0)
+		{
+			CString strField2 = strFields.Tokenize(L")", p);
+			CSQLiteField* pF = FindField(strField2);
+			if (pF != nullptr)
+			{
+				pF->m_dwFlags |= FX_UN;
+				continue;
+			}
+			AddContraints(strField + '(' + strField2 + ')');
+			continue;
+		}
 		if (strField.Left(11).CompareNoCase(L"FOREIGN KEY") == 0)
-			return;
+		{
+			CString strField2 = strFields.Tokenize(L")", p);
+			CString strField3 = strFields.Tokenize(L")", p);
+			AddContraints(strField + '(' + strField2 + ')' + strField3 + ')');
+			continue;
+		}
+		if (strField.Left(5).CompareNoCase(L"CHECK") == 0)
+		{
+			CString strField2 = strFields.Tokenize(L")", p);
+			AddContraints(strField + '(' + strField2 + ')');
+			continue;
+		}
 
 		CSQLiteField field;
 		int q = 0;
 		field.m_SqlName = strField.Tokenize(L" \t", q);
-		if (field.m_SqlName[0] == '\"')
-		{
-			field.m_SqlName = field.m_SqlName.Mid(1, field.m_SqlName.GetLength() - 2);
-		}
 		field.m_SqlTypeRaw = strField.Tokenize(L" ", q);
 		field.m_nSqlType = CSQLiteTypes::GetSqlType(field.m_SqlTypeRaw);
 		field.SetDefaultType();
+		field.m_SqlName = StripDeco(field.m_SqlName);
 		CString strName = field.m_SqlName;
-		if (strName[0] == '[')
-			strName = strName.Mid(1, strName.GetLength() - 2);
 		field.m_strVarName = L"m_" + strName;
 		if (q > 0)
 		{
@@ -112,7 +144,6 @@ void CSQLiteTable::ParseFields(const CString& strFields)
 			field.SetFlags(strFlags);
 		}
 		m_fields.AddTail(field);
-		strField = strFields.Tokenize(L",", p);
 	}
 }
 
@@ -153,6 +184,34 @@ void CSQLiteTable::GetFunctions(CStringList& list)
 	}
 }
 
+CString CSQLiteTable::StripDeco(CString strName)
+{
+	if (strName[0] == '[' || strName[0] == '\"')
+		strName = strName.Mid(1, strName.GetLength() - 2);
+	return strName;
+}
+
+CSQLiteField* CSQLiteTable::FindField(const CString& strName)
+{
+	CString strField = StripDeco(strName);
+	POSITION pos = m_fields.GetHeadPosition();
+	while (pos != NULL)
+	{
+		CSQLiteField* pF = &m_fields.GetNext(pos);
+		if (strName.CompareNoCase(pF->m_SqlName) == 0)
+			return pF;
+	}
+	return nullptr;
+}
+
+void CSQLiteTable::AddContraints(CString str)
+{
+	if (!m_strConstraintsQuoted.IsEmpty())
+		m_strConstraintsQuoted += L",\")\n\t\t_T(\"";
+	str.Replace(L"\"", L"\\\"");
+	m_strConstraintsQuoted += str;
+}
+
 void CSQLiteField::SetDefaultType()
 {
 	m_nFktType = CSQLiteTypes::GetDefaultType(m_nSqlType);
@@ -178,6 +237,7 @@ void CSQLiteField::SetFlags(const CString& strFlags)
 
 CString CSQLiteField::GetDef()
 {
+	ASSERT(m_strVarName.GetLength() > 2);
 	return CSQLiteTypes::GetDeclLine(m_nFktType, m_strVarName);
 }
 

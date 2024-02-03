@@ -113,6 +113,7 @@ void CSQLiteClassGenDlg::ResetFieldData()
 	m_pField = nullptr;
 	m_nFktType = -1;
 	m_nFieldFocus = -1;
+	ShowFlags(0, 0);
 }
 
 void CSQLiteClassGenDlg::ShowTables()
@@ -156,10 +157,10 @@ void CSQLiteClassGenDlg::WriteHeaderFile(CSQLiteTable* pTable)
 	file.WriteString(L"#pragma once\n");
 	file.WriteString(L"#include \"SQLiteRecordset.h\"\n\n");
 	file.WriteString(L"class " + pTable->m_ClassName + L" :\n"
-		L"    public CSQLiteRecordset\n"
+		L"\tpublic CSQLiteRecordset\n"
 		L"{\n");
 	file.WriteString(L"public:\n"
-		L"    " + pTable->m_ClassName + L"(CSQLiteDatabase* pDatabase = nullptr);\n");
+		L"\t" + pTable->m_ClassName + L"(CSQLiteDatabase* pDatabase = nullptr);\n");
 	// write vars
 	CStringList listVars;
 	pTable->GetDefs(listVars);
@@ -167,11 +168,11 @@ void CSQLiteClassGenDlg::WriteHeaderFile(CSQLiteTable* pTable)
 	while (pos != NULL)
 	{
 		CString s = listVars.GetNext(pos);
-		file.WriteString(L"    " + s + L"\n");
+		file.WriteString(L"\t" + s + L"\n");
 	}
 	file.WriteString(L"\npublic:\n"
-		L"    virtual CString GetDefaultSQL();    // Default SQL for Recordset\n"
-		L"    virtual void DoFieldExchange(CFieldExchange * pFX);  // RFX support\n"
+		L"\tvirtual CString GetDefaultSQL();    // Default SQL for Recordset\n"
+		L"\tvirtual void DoFieldExchange(CFieldExchange * pFX);  // RFX support\n"
 		L"};\n");
 }
 
@@ -180,11 +181,13 @@ void CSQLiteClassGenDlg::WriteClassFile(CSQLiteTable* pTable)
 	CString strPath = m_strTargetPath + L"\\" + pTable->m_FileName + L".cpp";
 	CStdioFile file(strPath, CFile::modeWrite | CFile::modeCreate);
 	file.WriteString(L"#include \"pch.h\"\n"
-	L"#include \"" + pTable->m_FileName + L".h\"\n\n");
+		L"#include \"" + pTable->m_FileName + L".h\"\n\n");
 	file.WriteString(pTable->m_ClassName + L"::" + pTable->m_ClassName + L"(CSQLiteDatabase * pdb)\n"
-		L"	  : CSQLiteRecordset(pdb)\n{\n}\n\n");
+		L"\t : CSQLiteRecordset(pdb)\n{\n");
+	file.WriteString(L"\tm_strConstraints = _T(\"" + pTable->GetConstraintsQuoted() + L"\");\n");
+	file.WriteString(L"}\n\n");
 	file.WriteString(L"CString " + pTable->m_ClassName + L"::GetDefaultSQL()\n"
-		L"{\n    return _T(\"" + pTable->m_TblName + L"\");\n}\n\n");
+		L"{\n\treturn _T(\"" + pTable->m_TblName + L"\");\n}\n\n");
 	file.WriteString(L"void " + pTable->m_ClassName + L"::DoFieldExchange(CFieldExchange * pFX)\n{\n");
 	// write fkts
 //		RFX_Long(pFX, _T("[CompID]"), m_CompID, FX_PK);
@@ -195,7 +198,7 @@ void CSQLiteClassGenDlg::WriteClassFile(CSQLiteTable* pTable)
 	while (pos != NULL)
 	{
 		CString s = listFkts.GetNext(pos);
-		file.WriteString(L"    " + s + L"\n");
+		file.WriteString(L"\t" + s + L"\n");
 	}
 	file.WriteString(L"}\n");
 }
@@ -318,7 +321,7 @@ void CSQLiteClassGenDlg::OnClickedButtonSelTargetPath()
 		m_strTargetPath = dlg.GetPathName();
 		m_editTargetPath.SetWindowText(m_strTargetPath);
 	}
-	m_buttonCreateFiles.EnableWindow(m_pTable != nullptr);
+	m_buttonCreateFiles.EnableWindow(m_schema.GetFirstTable() != nullptr);
 }
 
 

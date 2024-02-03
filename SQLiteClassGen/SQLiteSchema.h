@@ -27,11 +27,18 @@ public:
 	CString m_ClassName;
 	CString m_FileName;
 	CList<CSQLiteField> m_fields;
+	CString m_strConstraintsQuoted;
 
 	void ParseFields(const CString& strFields);
 	void FillList(CListCtrl& list);
 	void GetDefs(CStringList& list);
 	void GetFunctions(CStringList& list);
+	CString GetConstraintsQuoted() { return m_strConstraintsQuoted; }
+
+protected:
+	CString StripDeco(CString strName);
+	CSQLiteField* FindField(const CString& strName);
+	void AddContraints(CString str);
 };
 
 class CSQLiteSchema
