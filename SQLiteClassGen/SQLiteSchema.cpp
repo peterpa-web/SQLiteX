@@ -131,12 +131,20 @@ void CSQLiteTable::ParseFields(const CString& strFields)
 
 		CSQLiteField field;
 		int q = 0;
-		field.m_SqlName = strField.Tokenize(L" \t", q);
+		if (strField[0] == '"')
+		{
+			q = strField.Find('"', 1);
+			field.m_SqlName = strField.Mid(1, q - 1);
+			while (strField[++q] == ' ' || strField[q] == '\t');
+		}
+		else
+			field.m_SqlName = strField.Tokenize(L" \t", q);
 		field.m_SqlTypeRaw = strField.Tokenize(L" ", q);
 		field.m_nSqlType = CSQLiteTypes::GetSqlType(field.m_SqlTypeRaw);
 		field.SetDefaultType();
 		field.m_SqlName = StripDeco(field.m_SqlName);
 		CString strName = field.m_SqlName;
+		strName.Replace(' ', '_');
 		field.m_strVarName = L"m_" + strName;
 		if (q > 0)
 		{

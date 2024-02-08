@@ -405,8 +405,12 @@ void CSQLiteClassGenDlg::OnBnClickedCheckUN()
 
 void CSQLiteClassGenDlg::OnEnChangeEditVarName()
 {
-	if (m_pField != nullptr)
-		m_editVarName.GetWindowText(m_pField->m_strVarName);
+	if (m_pField == nullptr)
+		return;
+	CString str;
+	m_editVarName.GetWindowText(str);
+	if (!str.IsEmpty())
+		m_pField->m_strVarName = str;
 }
 
 

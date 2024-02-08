@@ -4,7 +4,7 @@
 CSQLiteTypes::CTypeInt CSQLiteTypes::s_aTypes[s_nTypes] = {
 	{ 1, "__int64", "__int64",			"RFX_Int64",	FX_NN | FX_PK | FX_AN | FX_UN },
 	{ 1, "long",	"long",				"RFX_Long",		FX_NN | FX_PK | FX_AN | FX_UN },
-	{ 1, "bool",	"bool",				"RFX_Bool",		0 },
+	{ 1, "BOOL",	"BOOL",				"RFX_Bool",		FX_NN },
 	{ 1, "CTime", "CTime s >= 1970",	"RFX_Time",		FX_NN | FX_UN },
 	{ 1, "CTimeJava", "CTime ms >= 1970", "RFX_TimeJava", FX_NN | FX_UN },
 	{ 1, "CDateLong", "CDateLong (YYYYMMDD)", "RFX_Date", FX_NN | FX_UN },
@@ -37,8 +37,12 @@ CString CSQLiteTypes::GetDeclLine(int nType, const CString& strVarName)
 	CString str(s_aTypes[nType].m_pszCppType);
 	str += ' ';
 	str += strVarName;
-	if (islower(str[0]))
-		str += " = 0";
+	if (str == L"double")
+		str += L" = 0.0";
+	else if (str == L"BOOL")
+		str += L" = FALSE";
+	else if (islower(str[0]))
+		str += L" = 0";
 	str += ';';
 	return str;
 }
