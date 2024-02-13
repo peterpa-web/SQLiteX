@@ -31,6 +31,7 @@ public:
 	CStringA ToStringTimeDate();
 };
 
+// see also https://learn.microsoft.com/de-de/cpp/mfc/reference/crecordset-class
 class CSQLiteRecordset
 {
 private:
@@ -46,6 +47,7 @@ public:
 	bool IsEOF() const { return m_bEOF; }		// End Of File
 	bool IsDeleted() const;
 	void Create();
+	virtual void CreateIndex() {}
 	void Clear();	// reset the column variables
 	void Import(TxtFmt fmt = TxtFmt::standard, LPCTSTR pszExt = _T("txt"), char cSep = ';');
 	void Export(TxtFmt fmt, LPCTSTR pszExt = _T("txt"), char cSep = ';');		// expects Open()
@@ -56,9 +58,15 @@ public:
 	void Delete(long nRowId = 0);
 	void DeleteAll();
 	void Drop();
-//	int GetRecordCount();
-//	void SetFieldDirty(void* pField);
-//	void SetAbsolutePosition(int nRecord);
+	virtual void DropIndex() {}
+	const CStringA& GetSQL() const { return m_utf8SQL; }
+// 	void SetFieldNull(void* pv, BOOL bNull = TRUE);
+// 	BOOL IsFieldNull(void* pv);
+// 	BOOL IsFieldNullable(void* pv);
+// 	void SetParamNull(int nIndex, BOOL bNull = TRUE);
+//  BOOL CanRestart() const;
+//	BOOL CanUpdate() const;
+//	const CString& GetTableName() const;
 
 	CString m_strFilter;
 	CString m_strSort;
@@ -91,7 +99,8 @@ protected:
 		valReadAll,					// read all colls to values
 		valToExport,				// list value strings for export
 		pkName,						// pk if found
-		pkAfterInsert				// assign last rowid
+		pkAfterInsert,				// assign last rowid
+		parBind						// bind params
 	};
 
 	class CFieldExchange
@@ -107,14 +116,14 @@ protected:
 			inoutParam = 3		// SQL_PARAM_INPUT_OUTPUT,
 		};
 
-		CFieldExchange(FX_Task t) : m_task(t) { m_aSkip.SetSize(0, 64); }
-		void SetFieldType(UINT nFieldType) { m_nFieldType = nFieldType; }
+		CFieldExchange(FX_Task t);
+		void SetFieldType(UINT nFieldType);
 		void AddSQL(LPCSTR psz, char cSep = 0);
 		void AddSQL(LPCWSTR psz) { AddSQL(ToUtf8(psz)); }
 		CStringA NextImportField();
 
 		FX_Task m_task;
-		UINT m_nFieldType = noFieldType;
+		int m_nFieldType = noFieldType;
 		int m_nField = 0;
 		char m_cSQLSep = ',';
 		CStringA m_utf8SQL;
@@ -123,6 +132,7 @@ protected:
 		TxtFmt m_fmt = TxtFmt::standard;
 		bool m_bSkipPk = false;
 		CByteArray m_aSkip;
+		bool m_bSkipField = false;	// if non matching field type
 	};
 
 	virtual CString GetDefaultSQL() = 0;		// Default SQL for Recordset -> table name
@@ -144,6 +154,7 @@ protected:
 	CSQLiteDatabase* m_pDB = nullptr;
 	sqlite3_stmt* m_pStmtSel = nullptr;
 	sqlite3_stmt* m_pStmtUpd = nullptr;
+	CStringA m_utf8SQL;
 	int m_nParams = 0;
 	bool m_bEOF = true;
 	long m_nRowId = 0;			// see Edit() & OpenRow()

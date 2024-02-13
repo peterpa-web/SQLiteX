@@ -54,6 +54,9 @@
     <ClInclude Include="DlgExport.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="BackupDB.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SampleDlgApp.cpp">
@@ -81,6 +84,9 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="DlgExport.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="BackupDB.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>

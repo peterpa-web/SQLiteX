@@ -33,5 +33,14 @@ void CEmployeFull::Create()
 		" LEFT JOIN Company b ON a.CompId = b.CompId"
 		" ORDER BY FirstName");
 
-	m_pDB->ExecuteSQL(utf8Sql);
+	try
+	{
+		m_pDB->ExecuteSQL(utf8Sql);
+		CreateIndex();
+	}
+	catch (CSQLiteException* pe)
+	{
+		pe->AddContext(GetDefaultSQL());
+		throw pe;
+	}
 }

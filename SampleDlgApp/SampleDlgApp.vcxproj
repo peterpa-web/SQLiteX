@@ -183,6 +183,7 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="BackupDB.h" />
     <ClInclude Include="DlgCompany.h" />
     <ClInclude Include="DlgEmploye.h" />
     <ClInclude Include="DlgExport.h" />
@@ -197,6 +198,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BackupDB.cpp" />
     <ClCompile Include="DlgCompany.cpp" />
     <ClCompile Include="DlgEmploye.cpp" />
     <ClCompile Include="DlgExport.cpp" />
