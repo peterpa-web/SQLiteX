@@ -160,7 +160,8 @@ void CSQLiteClassGenDlg::WriteHeaderFile(CSQLiteTable* pTable)
 		L"\tpublic CSQLiteRecordset\n"
 		L"{\n");
 	file.WriteString(L"public:\n"
-		L"\t" + pTable->m_ClassName + L"(CSQLiteDatabase* pDatabase = nullptr);\n");
+		L"\t" + pTable->m_ClassName + L"(CSQLiteDatabase* pDatabase = nullptr);\n"
+		L"\n// Field/Param Data\n");
 	// write vars
 	CStringList listVars;
 	pTable->GetDefs(listVars);
@@ -172,8 +173,13 @@ void CSQLiteClassGenDlg::WriteHeaderFile(CSQLiteTable* pTable)
 	}
 	file.WriteString(L"\npublic:\n"
 		L"\tvirtual CString GetDefaultSQL();    // Default SQL for Recordset\n"
-		L"\tvirtual void DoFieldExchange(CFieldExchange * pFX);  // RFX support\n"
-		L"};\n");
+		L"\tvirtual void DoFieldExchange(CFieldExchange* pFX);  // RFX support\n");
+	if (pTable->m_idx.GetCount() > 0)
+		file.WriteString(L"\tvirtual void CreateIndex() override;\n"
+		L"\tvirtual void DropIndex() override;\n");
+	if (pTable->m_bView)
+		file.WriteString(L"\tvoid Create();\n");
+	file.WriteString(L"};\n");
 }
 
 void CSQLiteClassGenDlg::WriteClassFile(CSQLiteTable* pTable)
@@ -182,13 +188,15 @@ void CSQLiteClassGenDlg::WriteClassFile(CSQLiteTable* pTable)
 	CStdioFile file(strPath, CFile::modeWrite | CFile::modeCreate);
 	file.WriteString(L"#include \"pch.h\"\n"
 		L"#include \"" + pTable->m_FileName + L".h\"\n\n");
-	file.WriteString(pTable->m_ClassName + L"::" + pTable->m_ClassName + L"(CSQLiteDatabase * pdb)\n"
-		L"\t : CSQLiteRecordset(pdb)\n{\n");
-	file.WriteString(L"\tm_strConstraints = _T(\"" + pTable->GetConstraintsQuoted() + L"\");\n");
+	file.WriteString(pTable->m_ClassName + L"::" + pTable->m_ClassName + L"(CSQLiteDatabase* pdb)\n"
+		L"\t: CSQLiteRecordset(pdb)\n{\n");
+	if (pTable->m_bView)
+		file.WriteString(L"\tm_nDefaultType = view;\n");
+	file.WriteString(L"\tm_strConstraints = L\"" + pTable->GetConstraintsQuoted() + L"\";\n");
 	file.WriteString(L"}\n\n");
 	file.WriteString(L"CString " + pTable->m_ClassName + L"::GetDefaultSQL()\n"
-		L"{\n\treturn _T(\"" + pTable->m_TblName + L"\");\n}\n\n");
-	file.WriteString(L"void " + pTable->m_ClassName + L"::DoFieldExchange(CFieldExchange * pFX)\n{\n");
+		L"{\n\treturn L\"" + pTable->m_TblName + L"\";\n}\n\n");
+	file.WriteString(L"void " + pTable->m_ClassName + L"::DoFieldExchange(CFieldExchange* pFX)\n{\n");
 	// write fkts
 //		RFX_Long(pFX, _T("[CompID]"), m_CompID, FX_PK);
 //		RFX_Text(pFX, _T("[CompName]"), m_CompName, FX_NN);
@@ -200,7 +208,52 @@ void CSQLiteClassGenDlg::WriteClassFile(CSQLiteTable* pTable)
 		CString s = listFkts.GetNext(pos);
 		file.WriteString(L"\t" + s + L"\n");
 	}
+
+	// write parameters
+	file.WriteString(L"\t// pFX->SetFieldType(CFieldExchange::param);\n");
+	file.WriteString(L"\t// RFX_Text(pFX, L\"AAA\", m_AAAParam, FX_NN);\n");
+
 	file.WriteString(L"}\n");
+
+	// write indices
+	if (pTable->m_idx.GetCount() > 0)
+	{
+		file.WriteString(L"\nvoid " + pTable->m_ClassName + L"::CreateIndex()\n{\n");
+		POSITION pos = pTable->m_idx.GetHeadPosition();
+		while (pos != NULL)
+		{
+			const CSQLiteIndex& si = pTable->m_idx.GetNext(pos);
+			CString s = si.m_Sql;
+			s.Replace(L"\"", L"\\\"");
+			file.WriteString(L"\tm_pDB->ExecuteSQL(L\"" + s + L"\");\n");
+		}
+		file.WriteString(L"}\n");
+
+		file.WriteString(L"\nvoid " + pTable->m_ClassName + L"::DropIndex()\n{\n");
+		pos = pTable->m_idx.GetHeadPosition();
+		while (pos != NULL)
+		{
+			const CSQLiteIndex& si = pTable->m_idx.GetNext(pos);
+			file.WriteString(L"\tm_pDB->ExecuteSQL(L\"DROP INDEX IF EXISTS " + si.m_Name + L";\");\n");
+		}
+		file.WriteString(L"}\n");
+	}
+	if (pTable->m_bView)
+	{
+		file.WriteString(L"\nvoid " + pTable->m_ClassName + L"::Create()\n{\n");
+		file.WriteString(L"\tCStringA utf8Sql = ToUtf8(L\"" + pTable->m_Sql + L";\");\n");
+		file.WriteString(L"\ttry"
+			L"\t{\n"
+			L"\t\tm_pDB->ExecuteSQL(utf8Sql);\n"
+			L"\t\tCreateIndex();\n"
+			L"\t}\n"
+			L"\tcatch (CSQLiteException* pe)\n"
+			L"\t{\n"
+			L"\t\tpe->AddContext(GetDefaultSQL());\n"
+			L"\t\tthrow pe;\n"
+			L"\t}\n"
+			L"}\n");
+	}
 }
 
 BOOL CSQLiteClassGenDlg::OnInitDialog()
@@ -337,6 +390,7 @@ void CSQLiteClassGenDlg::OnClickedButtonCreateFiles()
 		}
 		pT = m_schema.GetNextTable();
 	}
+	MessageBox(L"Dateien fertig erstellt.");
 }
 
 
@@ -370,7 +424,10 @@ void CSQLiteClassGenDlg::OnCbnSelchangeComboFieldType()
 {
 	int n = m_comboFieldType.GetCurSel();
 	m_nFktType = m_pField->m_nFktType = m_comboFieldType.GetItemData(n);
-	ShowFlags(m_pField->m_dwFlags, CSQLiteTypes::GetFlags(m_nFktType));
+	DWORD dwSupported = CSQLiteTypes::GetFlags(m_nFktType);
+	if (m_pTable->m_bView)
+		dwSupported &= FX_NN;
+	ShowFlags(m_pField->m_dwFlags, dwSupported);
 	m_listFields.SetItemText(m_nFieldFocus, 2, m_pField->GetDescr());
 }
 
@@ -448,7 +505,10 @@ void CSQLiteClassGenDlg::OnLvnItemchangedListFields(NMHDR* pNMHDR, LRESULT* pRes
 		m_nFktType = m_pField->m_nFktType;
 		CSQLiteTypes::FillCombo(m_comboFieldType, m_pField->m_nSqlType, m_nFktType);
 		m_editVarName.SetWindowText(m_pField->m_strVarName);
-		ShowFlags(m_pField->m_dwFlags, CSQLiteTypes::GetFlags(m_nFktType));
+		DWORD dwSupported = CSQLiteTypes::GetFlags(m_nFktType);
+		if (m_pTable->m_bView)
+			dwSupported &= FX_NN;
+		ShowFlags(m_pField->m_dwFlags, dwSupported);
 	}
 	*pResult = 0;
 }

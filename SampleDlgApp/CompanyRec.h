@@ -6,8 +6,10 @@ class CCompanyRec :
 {
 public:
 	CCompanyRec(CSQLiteDatabase* pDatabase = nullptr);
-	long	m_CompID = 0;
-	CString	m_CompName;
+
+// Field/Param Data
+	long m_CompID = 0;
+	CStringW m_CompName;
 
 public:
 	virtual CString GetDefaultSQL();    // Default SQL for Recordset

@@ -27,8 +27,8 @@ public:
 	CTime m_time;
 	int m_nMillis = 0;
 	bool operator ==(const CTimeJava& t) { return m_time == t.m_time && m_nMillis == t.m_nMillis; }
-	CStringA ToStringGmt();
-	CStringA ToStringTimeDate();
+	CStringA ToStringGmt() const;
+	CStringA ToStringTimeDate() const;
 };
 
 // see also https://learn.microsoft.com/de-de/cpp/mfc/reference/crecordset-class
@@ -40,7 +40,7 @@ public:
 	CSQLiteRecordset(CSQLiteDatabase* pdb);
 	virtual ~CSQLiteRecordset();
 	virtual bool Open(LPCWSTR lpszSQL = nullptr);
-	bool OpenRow(long nRowId = 0);
+	bool OpenRow(__int64 nRowId = 0);
 	virtual void Close();
 	bool Requery();
 	bool IsOpen() const;
@@ -52,10 +52,10 @@ public:
 	void Import(TxtFmt fmt = TxtFmt::standard, LPCTSTR pszExt = _T("txt"), char cSep = ';');
 	void Export(TxtFmt fmt, LPCTSTR pszExt = _T("txt"), char cSep = ';');		// expects Open()
 	void MoveNext();
-	void Edit(long nRowId = 0);
+	void Edit(__int64 nRowId = 0);
 	void AddNew();
 	void Update();
-	void Delete(long nRowId = 0);
+	void Delete(__int64 nRowId = 0);
 	void DeleteAll();
 	void Drop();
 	virtual void DropIndex() {}
@@ -138,11 +138,11 @@ protected:
 	virtual CString GetDefaultSQL() = 0;		// Default SQL for Recordset -> table name
 	virtual void DoFieldExchange(CFieldExchange* pFX) = 0;
 	void RFX_Bool(CFieldExchange* pFX, LPCTSTR szName, BOOL& value, DWORD dwFlags = 0);
-	void RFX_Int64(CFieldExchange* pFX, LPCTSTR szName, __int64& value, DWORD dwFlags = 0);
-	void RFX_Long(CFieldExchange* pFX, LPCTSTR szName, long& value, DWORD dwFlags = 0);
+	void RFX_Int64(CFieldExchange* pFX, LPCWSTR szName, __int64& value, DWORD dwFlags = 0);
+	void RFX_Long(CFieldExchange* pFX, LPCWSTR szName, long& value, DWORD dwFlags = 0);
 //	void RFX_Int(CFieldExchange* pFX, LPCTSTR szName, int& value, DWORD dwFlags = 0);
-	void RFX_Text(CFieldExchange* pFX, LPCTSTR szName, CStringW& value, DWORD dwFlags = 0);
-	void RFX_Double(CFieldExchange* pFX, LPCTSTR szName, double& value, DWORD dwFlags = 0);
+	void RFX_Text(CFieldExchange* pFX, LPCWSTR szName, CStringW& value, DWORD dwFlags = 0);
+	void RFX_Double(CFieldExchange* pFX, LPCWSTR szName, double& value, DWORD dwFlags = 0);
 //	void RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CTime& value, DWORD dwFlags = 0);
 	void RFX_Date(CFieldExchange* pFX, LPCTSTR szName, CDateLong& value, DWORD dwFlags = 0);
 	void RFX_DateTime(CFieldExchange* pFX, LPCTSTR szName, COleDateTime& value, DWORD dwFlags = 0);
@@ -157,7 +157,7 @@ protected:
 	CStringA m_utf8SQL;
 	int m_nParams = 0;
 	bool m_bEOF = true;
-	long m_nRowId = 0;			// see Edit() & OpenRow()
+	__int64 m_nRowId = 0;			// see Edit() & OpenRow()
 
 	int m_nFields = 0;			// dummy
 	int m_nDefaultType = snapshot;

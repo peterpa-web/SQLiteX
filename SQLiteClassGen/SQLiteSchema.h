@@ -2,6 +2,8 @@
 #include "SQLiteRecordset.h"
 #include "SQLiteTypes.h"
 
+class CSQLiteTableInfo;
+
 class CSQLiteField
 {
 public:
@@ -20,6 +22,13 @@ public:
 	CString GetFunction();
 };
 
+class CSQLiteIndex
+{
+public:
+	CString m_Name;
+	CString m_Sql;
+};
+
 class CSQLiteTable
 {
 public:
@@ -28,8 +37,12 @@ public:
 	CString m_FileName;
 	CList<CSQLiteField> m_fields;
 	CString m_strConstraintsQuoted;
+	CList<CSQLiteIndex> m_idx;
+	bool m_bView = false;
+	CString m_Sql;
 
 	void ParseFields(const CString& strFields);
+	void AddField(const CSQLiteTableInfo& ti);
 	void FillList(CListCtrl& list);
 	void GetDefs(CStringList& list);
 	void GetFunctions(CStringList& list);
@@ -77,5 +90,27 @@ public:
 	virtual CString GetDefaultSQL();    // Default SQL for Recordset
 	virtual void DoFieldExchange(CFieldExchange* pFX);  // RFX support
 
+};
+
+class CSQLiteTableInfo :
+    protected CSQLiteRecordset
+{
+public:
+	CSQLiteTableInfo(CSQLiteDatabase* pDatabase = nullptr);
+
+	long m_Cid = 0;
+	CString	m_Name;
+	CString m_Type;
+	BOOL m_NotNull = FALSE;
+	CString m_Dflt_Value;
+	BOOL m_Pk = FALSE;
+
+public:
+	virtual CString GetDefaultSQL();    // Default SQL for Recordset
+	virtual void DoFieldExchange(CFieldExchange* pFX);  // RFX support
+
+	bool OpenTable(const CString& strTblName) { return Open(L"PRAGMA table_info(" + strTblName + L");"); }
+	bool IsEOF() const { return m_bEOF; }		// End Of File
+	void MoveNext() { CSQLiteRecordset::MoveNext(); }
 };
 

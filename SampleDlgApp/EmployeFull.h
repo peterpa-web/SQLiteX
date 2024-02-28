@@ -8,12 +8,11 @@ public:
 	CEmployeFull(CSQLiteDatabase* pDatabase = nullptr);
 
 // Field/Param Data
-	long	m_EmployeID = 0;
-	CString	m_FirstName;
-//	CDateLong	m_Birthday;
+    long		m_EmployeID = 0;
+	CStringW	m_FirstName;
 	COleDateTime	m_Birthday;
-	CEuro	m_Salary;
-	CString	m_CompName;
+	CEuro		m_Salary;
+	CStringW	m_CompName;
 
 public:
 	virtual CString GetDefaultSQL();		// Default SQL for Recordset

@@ -70,7 +70,7 @@ void CSQLiteDatabase::Close()
 void CSQLiteDatabase::ExecuteSQL(const CStringA& utf8Sql)
 {
 	ASSERT(IsOpen());
-	TRACE1("ExecSQL %S\n", utf8Sql);
+//	TRACE1("ExecSQL %S\n", utf8Sql);
 	int nRc = sqlite3_exec(m_pdb3, utf8Sql, nullptr, nullptr, nullptr);
 	if (nRc != SQLITE_OK)
 		throw new CSQLiteException(GetLastError());

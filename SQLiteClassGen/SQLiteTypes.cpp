@@ -35,13 +35,13 @@ void CSQLiteTypes::FillCombo(CComboBox& combo, int nSqlType, int nFktType)
 CString CSQLiteTypes::GetDeclLine(int nType, const CString& strVarName)
 {
 	CString str(s_aTypes[nType].m_pszCppType);
-	str += ' ';
+	str += '\t';
 	str += strVarName;
-	if (str == L"double")
+	if (nType == 7)			// double
 		str += L" = 0.0";
-	else if (str == L"BOOL")
+	else if (nType == 2)	// BOOL
 		str += L" = FALSE";
-	else if (islower(str[0]))
+	else if (nType == 0 || nType == 1)
 		str += L" = 0";
 	str += ';';
 	return str;
@@ -51,7 +51,7 @@ CString CSQLiteTypes::GetFktLine(int nType, const CString& strSqlName, const CSt
 {
 //	RFX_Long(pFX, _T("[CompID]"), m_CompID, FX_PK);
 	CString str(s_aTypes[nType].m_pszFunction);
-	str += L"(pFX, _T(\"" + strSqlName + L"\"), " + strVarName;
+	str += L"(pFX, L\"" + strSqlName + L"\", " + strVarName;
 	dwFlags &= GetFlags(nType);
 	if (dwFlags != 0)
 	{

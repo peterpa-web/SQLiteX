@@ -21,7 +21,7 @@ void CSQLiteSchema::ReadAll(const CString& strDbPath)
 	CSQLiteDatabase db;
 	bool b = db.Open(strDbPath);
 	CSQLiteSchemaInt schemaInt(&db);
-	schemaInt.m_strFilter = L"type=\"table\"";
+	schemaInt.m_strFilter = L"type=\"table\" OR type=\"view\"";
 	schemaInt.Open();
 	while (!schemaInt.IsEOF())
 	{
@@ -34,15 +34,42 @@ void CSQLiteSchema::ReadAll(const CString& strDbPath)
 		pT->m_ClassName = 'C' + pT->m_FileName;
 		CString strSql = schemaInt.m_Sql;
 		int p = 0;
-		CString strStart = strSql.Tokenize(L"(", p);
-		if (p > 0)
+		if (schemaInt.m_Type == L"table")
 		{
-//			CString strFields = strSql.Tokenize(L")", p);
-			CString strFields = strSql.Mid( p, strSql.GetLength() - p - 1);
-			pT->ParseFields(strFields);
+			CString strStart = strSql.Tokenize(L"(", p);
+			if (p > 0)
+			{
+				CString strFields = strSql.Mid(p, strSql.GetLength() - p - 1);
+				pT->ParseFields(strFields);
+			}
+		}
+		else if (schemaInt.m_Type == L"view")
+		{
+			pT->m_bView = true;
+			pT->m_Sql = schemaInt.m_Sql;
+			CSQLiteTableInfo ti(&db);
+			ti.OpenTable(schemaInt.m_TblName);
+			while (!ti.IsEOF())
+			{
+				pT->AddField(ti);
+				ti.MoveNext();
+			}
 		}
 		m_tables.AddTail(pT);
 		schemaInt.MoveNext();
+
+		CSQLiteSchemaInt schemaInt2(&db);
+		schemaInt2.m_strFilter = L"type=\"index\" AND tbl_name=$tbl_name";
+		schemaInt2.m_TblName = pT->m_TblName;
+		schemaInt2.Open();
+		while (!schemaInt2.IsEOF())
+		{
+			CSQLiteIndex si;
+			si.m_Name = schemaInt2.m_Name;
+			si.m_Sql = schemaInt2.m_Sql;
+			pT->m_idx.AddTail(si);
+			schemaInt2.MoveNext();
+		}
 	}
 	schemaInt.Close();
 
@@ -69,16 +96,16 @@ CSQLiteSchemaInt::CSQLiteSchemaInt(CSQLiteDatabase* pdb)
 
 CString CSQLiteSchemaInt::GetDefaultSQL()
 {
-	return _T("sqlite_schema");
+	return L"sqlite_schema";
 }
 
 void CSQLiteSchemaInt::DoFieldExchange(CFieldExchange* pFX)
 {
-	RFX_Text(pFX, _T("type"), m_Type);
-	RFX_Text(pFX, _T("name"), m_Name);
-	RFX_Text(pFX, _T("tbl_name"), m_TblName);
-	RFX_Long(pFX, _T("rootpage"), m_RootPage);
-	RFX_Text(pFX, _T("sql"), m_Sql, FX_NN);
+	RFX_Text(pFX, L"type", m_Type);
+	RFX_Text(pFX, L"name", m_Name);
+	RFX_Text(pFX, L"tbl_name", m_TblName);
+	RFX_Long(pFX, L"rootpage", m_RootPage);
+	RFX_Text(pFX, L"sql", m_Sql, FX_NN);
 }
 
 void CSQLiteTable::ParseFields(const CString& strFields)
@@ -153,6 +180,24 @@ void CSQLiteTable::ParseFields(const CString& strFields)
 		}
 		m_fields.AddTail(field);
 	}
+}
+
+void CSQLiteTable::AddField(const CSQLiteTableInfo& ti)
+{
+	CSQLiteField field;
+	field.m_SqlName = ti.m_Name;
+	field.m_SqlTypeRaw = ti.m_Type;
+	field.m_nSqlType = CSQLiteTypes::GetSqlType(field.m_SqlTypeRaw);
+	field.SetDefaultType();
+	field.m_SqlName = StripDeco(field.m_SqlName);
+	CString strName = field.m_SqlName;
+	strName.Replace(' ', '_');
+	field.m_strVarName = L"m_" + strName;
+	if (ti.m_NotNull)
+		field.m_dwFlags |= FX_NN;
+	if (ti.m_Pk)
+		field.m_dwFlags |= FX_PK;
+	m_fields.AddTail(field);
 }
 
 void CSQLiteTable::FillList(CListCtrl& list)
@@ -252,4 +297,24 @@ CString CSQLiteField::GetDef()
 CString CSQLiteField::GetFunction()
 {
 	return CSQLiteTypes::GetFktLine(m_nFktType, m_SqlName, m_strVarName, m_dwFlags);
+}
+
+CSQLiteTableInfo::CSQLiteTableInfo(CSQLiteDatabase* pdb)
+	: CSQLiteRecordset(pdb)
+{
+}
+
+CString CSQLiteTableInfo::GetDefaultSQL()
+{
+	return L"(table_info)";
+}
+
+void CSQLiteTableInfo::DoFieldExchange(CFieldExchange* pFX)
+{
+	RFX_Long(pFX, L"cid", m_Cid);
+	RFX_Text(pFX, L"name", m_Name);
+	RFX_Text(pFX, L"type", m_Type);
+	RFX_Bool(pFX, L"notnull", m_NotNull);
+	RFX_Text(pFX, L"dflt_value", m_Dflt_Value);
+	RFX_Bool(pFX, L"pk", m_Pk);
 }
