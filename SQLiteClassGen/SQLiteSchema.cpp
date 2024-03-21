@@ -115,6 +115,8 @@ void CSQLiteTable::ParseFields(const CString& strFields)
 	while (!(strField = strFields.Tokenize(L",(", p)).IsEmpty())
 	{
 		strField = strField.Trim();
+		if (strField.IsEmpty())
+			continue;
 		if (strField.Left(11).CompareNoCase(L"PRIMARY KEY") == 0)
 		{
 			CString strField2 = strFields.Tokenize(L")", p);
@@ -251,7 +253,7 @@ CSQLiteField* CSQLiteTable::FindField(const CString& strName)
 	while (pos != NULL)
 	{
 		CSQLiteField* pF = &m_fields.GetNext(pos);
-		if (strName.CompareNoCase(pF->m_SqlName) == 0)
+		if (strField.CompareNoCase(pF->m_SqlName) == 0)
 			return pF;
 	}
 	return nullptr;
@@ -260,8 +262,8 @@ CSQLiteField* CSQLiteTable::FindField(const CString& strName)
 void CSQLiteTable::AddContraints(CString str)
 {
 	if (!m_strConstraintsQuoted.IsEmpty())
-		m_strConstraintsQuoted += L",\")\n\t\t_T(\"";
-	str.Replace(L"\"", L"\\\"");
+		m_strConstraintsQuoted += L",\\n\"\n\t\tL\"";
+	str.Replace(L"\"", L"");		// or L"\\\""
 	m_strConstraintsQuoted += str;
 }
 

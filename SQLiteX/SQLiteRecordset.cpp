@@ -14,12 +14,13 @@ CSQLiteRecordset::~CSQLiteRecordset()
 	CloseUpd();
 }
 
-bool CSQLiteRecordset::Open(LPCWSTR lpszSQL)
+void CSQLiteRecordset::Open(LPCWSTR lpszSQL)
 {
 	if (IsOpen())
 	{
-		ASSERT(FALSE);
-		return false;
+		CString str;
+		str.Format(_T("Open %s: Is still open"), (LPCWSTR)GetDefaultSQL());
+		throw new CSQLiteException(str);
 	}
 
 	if (lpszSQL != nullptr)
@@ -74,10 +75,9 @@ bool CSQLiteRecordset::Open(LPCWSTR lpszSQL)
 	}
 	// read 1st record
 	MoveNext();
-	return true;
 }
 
-bool CSQLiteRecordset::OpenRow(__int64 nRowId)
+void CSQLiteRecordset::OpenRow(__int64 nRowId)
 {
 	m_nRowId = nRowId;
 	CFieldExchange fx(FX_Task::pkName);
@@ -87,7 +87,8 @@ bool CSQLiteRecordset::OpenRow(__int64 nRowId)
 	CString strSQL;
 	strSQL.Format(L"SELECT * FROM %s WHERE %s = %lld;", (LPCTSTR)GetDefaultSQL(), 
 		(LPCWSTR)FromUtf8(fx.m_utf8SQL), m_nRowId);
-	return Open(strSQL);
+	Open(strSQL);
+	ASSERT(!IsEOF());
 }
 
 void CSQLiteRecordset::Close()

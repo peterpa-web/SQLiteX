@@ -109,7 +109,7 @@ public:
 	virtual CString GetDefaultSQL();    // Default SQL for Recordset
 	virtual void DoFieldExchange(CFieldExchange* pFX);  // RFX support
 
-	bool OpenTable(const CString& strTblName) { return Open(L"PRAGMA table_info(" + strTblName + L");"); }
+	void OpenTable(const CString& strTblName) { Open(L"PRAGMA table_info(" + strTblName + L");"); }
 	bool IsEOF() const { return m_bEOF; }		// End Of File
 	void MoveNext() { CSQLiteRecordset::MoveNext(); }
 };
