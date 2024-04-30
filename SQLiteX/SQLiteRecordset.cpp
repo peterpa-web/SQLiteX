@@ -384,7 +384,7 @@ void CSQLiteRecordset::Edit(__int64 nRowId)
 	if (nRowId != 0)
 	{
 		OpenRow(nRowId);	// fetch old data
-		Close();
+//		Close();	must be closed later
 	}
 	m_updState = UpdState::edit;
 }
