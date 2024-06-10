@@ -63,14 +63,17 @@ void CSQLiteDatabase::Close()
 
 	int iResult = sqlite3_close(m_pdb3);
 	if (iResult != 0)
+	{
 		TRACE2("sqlite3_close() ret=%d %s\n", iResult, GetLastError());
+		ASSERT(FALSE);	// 5: Assure all recordsets are closed before
+	}
 	m_pdb3 = nullptr;
 }
 
 void CSQLiteDatabase::ExecuteSQL(const CStringA& utf8Sql)
 {
 	ASSERT(IsOpen());
-//	TRACE1("ExecSQL %S\n", utf8Sql);
+	TRACE1("ExecSQL %S\n", utf8Sql);
 	int nRc = sqlite3_exec(m_pdb3, utf8Sql, nullptr, nullptr, nullptr);
 	if (nRc != SQLITE_OK)
 		throw new CSQLiteException(GetLastError());
