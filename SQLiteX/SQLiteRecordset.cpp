@@ -97,9 +97,15 @@ void CSQLiteRecordset::Close()
 	if (m_pStmtSel == nullptr)
 		return;
 
-	int iResult = sqlite3_finalize(m_pStmtSel);
-	if (iResult != 0)
-		TRACE1("sqlite3_finalize() sel ret=%d\n", iResult);
+	int nRc = sqlite3_finalize(m_pStmtSel);
+//	if (iResult != 0)
+//		TRACE1("sqlite3_finalize() sel ret=%d\n", iResult);
+	if (nRc != SQLITE_OK)
+	{
+		CSQLiteException* pe = new CSQLiteException(m_pDB->GetLastError());
+		pe->AddContext(CString(L"Close: ") + GetDefaultSQL());
+		throw pe;
+	}
 	m_pStmtSel = nullptr;
 	m_strFilter.Empty();
 	m_strSort.Empty();
@@ -559,9 +565,15 @@ void CSQLiteRecordset::CloseUpd()
 	if (m_pStmtUpd == nullptr)
 		return;
 
-	int iResult = sqlite3_finalize(m_pStmtUpd);
-	if (iResult != 0)
-		TRACE1("sqlite3_finalize() upd ret=%d\n", iResult);
+	int nRc = sqlite3_finalize(m_pStmtUpd);
+	if (nRc != SQLITE_OK)
+	{
+		CSQLiteException* pe = new CSQLiteException(m_pDB->GetLastError());
+		pe->AddContext(CString(L"CloseUpd: ") + GetDefaultSQL());
+		throw pe;
+	}
+	//	if (iResult != 0)
+//		TRACE1("sqlite3_finalize() upd ret=%d\n", iResult);
 	m_pStmtUpd = nullptr;
 	m_updState = UpdState::done;
 }
