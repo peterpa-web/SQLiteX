@@ -566,16 +566,15 @@ void CSQLiteRecordset::CloseUpd()
 		return;
 
 	int nRc = sqlite3_finalize(m_pStmtUpd);
+	m_pStmtUpd = nullptr;
+	m_updState = UpdState::done;
 	if (nRc != SQLITE_OK)
 	{
+//		TRACE1("sqlite3_finalize() upd ret=%d\n", iResult);
 		CSQLiteException* pe = new CSQLiteException(m_pDB->GetLastError());
 		pe->AddContext(CString(L"CloseUpd: ") + GetDefaultSQL());
 		throw pe;
 	}
-	//	if (iResult != 0)
-//		TRACE1("sqlite3_finalize() upd ret=%d\n", iResult);
-	m_pStmtUpd = nullptr;
-	m_updState = UpdState::done;
 }
 
 void CSQLiteRecordset::RFX_Gen(CFieldExchange* pFX, LPCTSTR szName, int nType, DWORD dwFlags)
