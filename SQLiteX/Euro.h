@@ -13,6 +13,7 @@ public:
 	CEuro operator +=(const CEuro& obj) { m_nCents += obj.m_nCents; return CEuro(m_nCents); }
 	bool operator ==(const CEuro& obj) const { return m_nCents == obj.m_nCents; }
 	bool IsInRange(int nPercent, const CEuro& obj) const;
+	long AbsDiff(const CEuro& obj) const;	// returns cents diff
 
 protected:
 	long m_nCents = 0;

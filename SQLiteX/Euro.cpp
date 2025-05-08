@@ -63,3 +63,11 @@ bool CEuro::IsInRange(int nPercent, const CEuro& obj) const
     return obj.m_nCents >= nMin && obj.m_nCents <= nMax;
 }
 
+long CEuro::AbsDiff(const CEuro& obj) const
+{
+    long nDelta = m_nCents - obj.m_nCents;
+    if (nDelta >= 0)
+        return nDelta;
+    return -nDelta;
+}
+
