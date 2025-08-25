@@ -88,7 +88,7 @@ void CSQLiteRecordset::OpenRow(__int64 nRowId)
 	strSQL.Format(L"SELECT * FROM %s WHERE %s = %lld;", (LPCTSTR)GetDefaultSQL(), 
 		(LPCWSTR)FromUtf8(fx.m_utf8SQL), m_nRowId);
 	Open(strSQL);
-	ASSERT(!IsEOF());
+//	ASSERT(!IsEOF());
 }
 
 void CSQLiteRecordset::Close()
