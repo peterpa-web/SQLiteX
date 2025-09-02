@@ -18,10 +18,13 @@ CString CEuro::ToString()
 CString CEuro::ToStringDots()
 {
     CString str = ToString();
+    int m = 0;
+    if (str[0] == '-')
+        m = 1;
     int p = str.GetLength() - 3;    // pos of decimal sign
     ASSERT(str[p] == ',');
     p -= 3;
-    while (p > 0)
+    while (p > m)
     {
         str = str.Left(p) + '.' + str.Mid(p);
         p -= 3;
