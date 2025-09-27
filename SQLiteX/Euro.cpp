@@ -8,16 +8,35 @@ CEuro::CEuro(double e)
     m_nCents = (long)d;
 }
 
-CString CEuro::ToString()
+CString CEuro::ToString(int nCents)
 {
     CString str;
-    str.Format(_T("%d,%2.2d"), m_nCents / 100, (m_nCents < 0 ? -m_nCents : m_nCents) % 100);
+    str.Format(_T("%d,%2.2d"), nCents / 100, (nCents < 0 ? -nCents : nCents) % 100);
     return str;
 }
 
-CString CEuro::ToStringDots()
+CString CEuro::EurToStringDots(int nEur)
 {
-    CString str = ToString();
+    CString str;
+    LPWSTR pBuf = str.GetBufferSetLength(33);
+    _itow_s(nEur, pBuf, 33, 10);
+    str.ReleaseBuffer();
+    int m = 0;
+    if (str[0] == '-')
+        m = 1;
+    int p = str.GetLength();
+    p -= 3;
+    while (p > m)
+    {
+        str = str.Left(p) + '.' + str.Mid(p);
+        p -= 3;
+    }
+    return str;
+}
+
+CString CEuro::ToStringDots(int nCents)
+{
+    CString str = ToString(nCents);
     int m = 0;
     if (str[0] == '-')
         m = 1;
