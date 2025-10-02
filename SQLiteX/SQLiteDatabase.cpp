@@ -116,7 +116,7 @@ CStringW CSQLiteDatabase::GetLastError()
 
 IMPLEMENT_DYNAMIC(CSQLiteException, CException)
 
-CSQLiteException::CSQLiteException(LPCTSTR lpszErrorText, BOOL bAutoDelete) : CException(bAutoDelete)
+CSQLiteException::CSQLiteException(LPCWSTR lpszErrorText, BOOL bAutoDelete) : CException(bAutoDelete)
 {
 	m_strErrorText = lpszErrorText;
 	TRACE1("CSQLiteException: %s\n", m_strErrorText);

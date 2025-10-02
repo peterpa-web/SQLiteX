@@ -38,7 +38,7 @@ class CSQLiteException : public CException
 {
 public:
 	DECLARE_DYNAMIC(CSQLiteException)
-	CSQLiteException(LPCTSTR lpszErrorText, BOOL bAutoDelete = TRUE);
+	CSQLiteException(LPCWSTR lpszErrorText, BOOL bAutoDelete = TRUE);
 	CSQLiteException(LPCSTR lpszErrorText, BOOL bAutoDelete = TRUE);
 //	virtual ~CSQLiteException() {}
 	virtual BOOL GetErrorMessage(

@@ -144,11 +144,11 @@ bool CSQLiteRecordset::IsDeleted() const
 	return false;	// dummy
 }
 
-void CSQLiteRecordset::Create()
+void CSQLiteRecordset::Create(bool bTemp)
 {
 	if (m_updState != UpdState::done)
 		throw new CSQLiteException(GetDefaultSQL() + ": Create() updState != done");
-	m_utf8SQL = "CREATE TABLE ";
+	m_utf8SQL = bTemp ? "CREATE TEMP TABLE " : "CREATE TABLE ";
 	CStringA utf8Table = ToUtf8(GetDefaultSQL());
 
 	CFieldExchange fx(FX_Task::colTypesForCreate);
@@ -550,7 +550,7 @@ void CSQLiteRecordset::Drop()
 		if (m_nDefaultType == view)
 			utf8Drop = "DROP VIEW ";
 
-		utf8Drop += ToUtf8(GetDefaultSQL()) + ';';
+		utf8Drop += "IF EXISTS " + ToUtf8(GetDefaultSQL()) + ';';
 		m_pDB->ExecuteSQL(utf8Drop);
 	}
 	catch (CSQLiteException* pe)

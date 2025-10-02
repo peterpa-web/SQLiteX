@@ -46,7 +46,7 @@ public:
 	bool IsOpen() const;
 	bool IsEOF() const { return m_bEOF; }		// End Of File
 	bool IsDeleted() const;
-	void Create();
+	void Create(bool bTemp = false);
 	virtual void CreateIndex() {}
 	void Clear();	// reset the column variables
 	void Import(TxtFmt fmt = TxtFmt::standard, LPCTSTR pszExt = _T("txt"), char cSep = ';');
