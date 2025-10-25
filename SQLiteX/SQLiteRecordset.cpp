@@ -77,11 +77,11 @@ void CSQLiteRecordset::Open(LPCWSTR lpszSQL)
 	MoveNext();
 }
 
-void CSQLiteRecordset::OpenRow(__int64 nRowId)
+void CSQLiteRecordset::OpenRow(__int64 nRowId, LPCSTR pszField)
 {
 	m_nRowId = nRowId;
 	CFieldExchange fx(FX_Task::pkName);
-	fx.m_utf8SQL = "_rowid_";
+	fx.m_utf8SQL = pszField;
 	DoFieldExchange(&fx);
 
 	CString strSQL;

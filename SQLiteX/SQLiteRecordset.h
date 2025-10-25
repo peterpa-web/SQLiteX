@@ -40,7 +40,7 @@ public:
 	CSQLiteRecordset(CSQLiteDatabase* pdb);
 	virtual ~CSQLiteRecordset();
 	virtual void Open(LPCWSTR lpszSQL = nullptr);
-	void OpenRow(__int64 nRowId = 0);
+	virtual void OpenRow(__int64 nRowId = 0, LPCSTR pszField = "_rowid_");
 	virtual void Close();
 	bool Requery();
 	bool IsOpen() const;
