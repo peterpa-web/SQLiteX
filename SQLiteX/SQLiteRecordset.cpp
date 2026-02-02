@@ -482,7 +482,7 @@ void CSQLiteRecordset::Update()
 	catch (CSQLiteException* pe)
 	{
 		pe->AddContext(GetDefaultSQL());
-		CloseUpd();
+		CloseUpd(false);
 		throw;
 	}
 	if (m_updState == UpdState::addNew)
@@ -560,7 +560,7 @@ void CSQLiteRecordset::Drop()
 	}
 }
 
-void CSQLiteRecordset::CloseUpd()
+void CSQLiteRecordset::CloseUpd(bool bThrowEx)
 {
 	if (m_pStmtUpd == nullptr)
 		return;
@@ -570,10 +570,13 @@ void CSQLiteRecordset::CloseUpd()
 	m_updState = UpdState::done;
 	if (nRc != SQLITE_OK)
 	{
-//		TRACE1("sqlite3_finalize() upd ret=%d\n", iResult);
-		CSQLiteException* pe = new CSQLiteException(m_pDB->GetLastError());
-		pe->AddContext(CString(L"CloseUpd: ") + GetDefaultSQL());
-		throw pe;
+		TRACE1("sqlite3_finalize() upd ret=%d\n", nRc);
+		if (bThrowEx)
+		{
+			CSQLiteException* pe = new CSQLiteException(m_pDB->GetLastError());
+			pe->AddContext(CString(L"CloseUpd: ") + GetDefaultSQL());
+			throw pe;
+		}
 	}
 }
 

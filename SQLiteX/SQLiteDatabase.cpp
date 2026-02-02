@@ -49,7 +49,7 @@ bool CSQLiteDatabase::Open(LPCWSTR lpszFilePath)
 
 	CStringA utf8FilePath = ToUtf8(lpszFilePath);
 	int iResult = sqlite3_open(utf8FilePath, &m_pdb3);
-	if (iResult == 0)
+	if (iResult == SQLITE_OK)
 		return true;
 
 	m_pdb3 = nullptr;

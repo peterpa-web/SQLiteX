@@ -70,10 +70,10 @@ void CEuro::FromString(const CStringA& str)
 
 bool CEuro::IsInRange(int nPercent, const CEuro& obj) const
 {
-    long nDelta = nPercent * m_nCents / 100;
-    long nMin = m_nCents;
-    long nMax = m_nCents;
-    if (m_nCents >= 0)
+    long nDelta = nPercent * obj.m_nCents / 100;
+    long nMin = obj.m_nCents;
+    long nMax = obj.m_nCents;
+    if (obj.m_nCents >= 0)
     {
         nMin -= nDelta;
         nMax += nDelta;
@@ -82,7 +82,7 @@ bool CEuro::IsInRange(int nPercent, const CEuro& obj) const
         nMin += nDelta;
         nMax -= nDelta;
     }
-    return obj.m_nCents >= nMin && obj.m_nCents <= nMax;
+    return m_nCents >= nMin && m_nCents <= nMax;
 }
 
 long CEuro::AbsDiff(const CEuro& obj) const

@@ -224,6 +224,7 @@ void CSQLiteClassGenDlg::WriteClassFile(CSQLiteTable* pTable)
 		{
 			const CSQLiteIndex& si = pTable->m_idx.GetNext(pos);
 			CString s = si.m_Sql;
+			s.Replace(L"\n", L" \\\n\t");
 			s.Replace(L"\"", L"\\\"");
 			file.WriteString(L"\tm_pDB->ExecuteSQL(L\"" + s + L"\");\n");
 		}

@@ -162,7 +162,7 @@ protected:
 	int m_nFields = 0;			// dummy
 	int m_nDefaultType = snapshot;
 
-	void CloseUpd();
+	void CloseUpd(bool bThrowEx = true);
 
 private:
 	void RFX_Gen(CFieldExchange* pFX, LPCTSTR szName, int nType, DWORD dwFlags);
