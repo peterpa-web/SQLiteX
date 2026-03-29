@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "SQLiteTypes.h"
+
 #include "SQLiteSchema.h"
 
 //    CREATE TABLE sqlite_schema(
@@ -15,9 +16,13 @@ CSQLiteSchema::~CSQLiteSchema()
 	ResetTables();
 }
 
-void CSQLiteSchema::ReadAll(const CString& strDbPath)
+bool CSQLiteSchema::ReadAll(const CString& strDbPath)
 {
 	ResetTables();
+	CFileStatus fs;
+	if (!CFile::GetStatus(strDbPath, fs) || (fs.m_attribute & CFile::directory) != 0)
+		return false;
+
 	CSQLiteDatabase db;
 	bool b = db.Open(strDbPath);
 	CSQLiteSchemaInt schemaInt(&db);
@@ -32,7 +37,7 @@ void CSQLiteSchema::ReadAll(const CString& strDbPath)
 			strName = strName.Mid(1, strName.GetLength() - 2);
 		pT->m_FileName = L"Rec" + strName.Left(1).MakeUpper() + strName.Mid(1);
 		pT->m_ClassName = 'C' + pT->m_FileName;
-		CString strSql = schemaInt.m_Sql;
+		CString strSql = pT->m_Sql = schemaInt.m_Sql;
 		int p = 0;
 		if (schemaInt.m_Type == L"table")
 		{
@@ -46,9 +51,9 @@ void CSQLiteSchema::ReadAll(const CString& strDbPath)
 		else if (schemaInt.m_Type == L"view")
 		{
 			pT->m_bView = true;
-			pT->m_Sql = schemaInt.m_Sql;
+//			pT->m_Sql = schemaInt.m_Sql;
 			CSQLiteTableInfo ti(&db);
-			ti.OpenTable(schemaInt.m_TblName);
+			ti.OpenTable(pT->m_TblName);
 			while (!ti.IsEOF())
 			{
 				pT->AddField(ti);
@@ -72,7 +77,7 @@ void CSQLiteSchema::ReadAll(const CString& strDbPath)
 		}
 	}
 	schemaInt.Close();
-
+	return true;
 }
 
 void CSQLiteSchema::ResetTables()
@@ -172,14 +177,13 @@ void CSQLiteTable::ParseFields(const CString& strFields)
 		field.m_nSqlType = CSQLiteTypes::GetSqlType(field.m_SqlTypeRaw);
 		field.SetDefaultType();
 		field.m_SqlName = StripDeco(field.m_SqlName);
-		CString strName = field.m_SqlName;
-		strName.Replace(' ', '_');
-		field.m_strVarName = L"m_" + strName;
+		field.InitVarName();
 		if (q > 0)
 		{
 			CString strFlags = strField.Tokenize(L")", q);
 			field.SetFlags(strFlags);
 		}
+		field.m_dwFlagsOld = field.m_dwFlags;
 		m_fields.AddTail(field);
 	}
 }
@@ -192,26 +196,42 @@ void CSQLiteTable::AddField(const CSQLiteTableInfo& ti)
 	field.m_nSqlType = CSQLiteTypes::GetSqlType(field.m_SqlTypeRaw);
 	field.SetDefaultType();
 	field.m_SqlName = StripDeco(field.m_SqlName);
-	CString strName = field.m_SqlName;
-	strName.Replace(' ', '_');
-	field.m_strVarName = L"m_" + strName;
+	field.InitVarName();
 	if (ti.m_NotNull)
 		field.m_dwFlags |= FX_NN;
 	if (ti.m_Pk)
 		field.m_dwFlags |= FX_PK;
+	field.m_dwFlagsOld = field.m_dwFlags;
 	m_fields.AddTail(field);
+}
+
+void CSQLiteTable::ResetFields()
+{
+	POSITION pos = m_fields.GetHeadPosition();
+	while (pos != NULL)
+	{
+		CSQLiteField& f = m_fields.GetNext(pos);
+		f.m_dwModified = f.MOD_ALL;
+		f.m_dwFlags = f.m_dwFlagsOld;
+		f.InitVarName();
+	}
 }
 
 void CSQLiteTable::FillList(CListCtrl& list)
 {
 	list.DeleteAllItems();
+	if (m_ClassName.IsEmpty())
+		return;
 	POSITION pos = m_fields.GetHeadPosition();
 	int i = 0;
 	while (pos != NULL)
 	{
 		CSQLiteField& f = m_fields.GetNext(pos);
 		int n = list.InsertItem(i, f.m_SqlName);
-		list.SetItemText(i, 1, f.m_SqlTypeRaw);
+		CString s1 = f.m_SqlTypeRaw + ' ' + f.GetFlagsShort();
+		if (f.m_dwModified != 0)
+			s1 = L"* " + s1;
+		list.SetItemText(i, 1, s1);
 		list.SetItemText(i, 2, f.GetDescr());
 		list.SetItemData(i++, (DWORD_PTR) &f);
 	}
@@ -237,6 +257,75 @@ void CSQLiteTable::GetFunctions(CStringList& list)
 		CString s = f.GetFunction();
 		list.AddTail(s);
 	}
+}
+
+bool CSQLiteTable::GetOldDefs(const CString& strTargetPath)
+{
+	if (!m_OldClass.IsEmpty() && m_OldClass.GetOldClassName() == m_ClassName)
+		return true;
+	if (!m_OldClass.Read(strTargetPath, m_FileName))
+		return false;
+	m_ClassName = m_OldClass.GetOldClassName();
+	m_dwModified = 0;
+	POSITION posF = m_fields.GetHeadPosition();
+	while (posF != NULL)
+	{
+		CSQLiteField& f = m_fields.GetNext(posF);
+		const COldClass::CFldData* pd = m_OldClass.GetFldBySql(f.m_SqlName);
+		if (pd != nullptr)
+		{
+			f.m_dwModified = 0;
+			int nType = pd->m_nType;
+			if (nType >= 0)
+				f.m_nFktType = f.m_nFktTypeOld = nType;
+		//	else
+		//		f.m_dwModified |= f.MOD_TYPE;
+			CString strFlags = pd->m_strFlags;
+			DWORD dwFlags = f.GetFlagsFromClass(strFlags);
+			f.m_dwFlags = f.m_dwFlagsOld = dwFlags;
+		//	if (dwFlags != f.m_dwFlagsOld)
+		//		f.m_dwModified |= f.MOD_FLAGS;
+			CString strVar = pd->m_strVar;
+			if (!strVar.IsEmpty())
+				f.m_strVarName = f.m_strVarNameOld = strVar;
+		//	else
+		//		f.m_dwModified |= f.MOD_VAR;
+		}
+		else
+			f.m_dwModified = f.MOD_ALL;
+	}
+	if (m_OldClass.GetFieldCount() != m_fields.GetCount())
+		m_dwModified |= MOD_COUNT;
+	return true;
+}
+
+void CSQLiteTable::SetDefClassName()
+{
+	CString strName = m_TblName;
+	if (strName[0] == '[')
+		strName = strName.Mid(1, strName.GetLength() - 2);
+	m_FileName = L"Rec" + strName.Left(1).MakeUpper() + strName.Mid(1);
+	m_ClassName = 'C' + m_FileName;
+}
+
+bool CSQLiteTable::IsModified()
+{
+	if (m_dwModified != 0)
+	{
+		TRACE2("IsModif %s %d\n", m_FileName, m_dwModified);
+		return true;
+	}
+	POSITION pos = m_fields.GetHeadPosition();
+	while (pos != NULL)
+	{
+		CSQLiteField& f = m_fields.GetNext(pos);
+		if (f.m_dwModified != 0)
+		{
+			TRACE3("IsModif %s %s %d\n", m_FileName, f.m_SqlName, f.m_dwModified);
+			return true;
+		}
+	}
+	return false;
 }
 
 CString CSQLiteTable::StripDeco(CString strName)
@@ -290,6 +379,38 @@ void CSQLiteField::SetFlags(const CString& strFlags)
 		m_dwFlags |= FX_UN;
 }
 
+DWORD CSQLiteField::GetFlagsFromClass(const CString& strFlags)
+{
+	if (strFlags.IsEmpty())
+		return 0;
+
+	CString strF = strFlags;
+	DWORD dwFlags = 0;
+	if (strF.Find(L"FX_NN") >= 0)
+		dwFlags |= FX_NN;
+	if (strF.Find(L"FX_PK") >= 0)
+		dwFlags |= FX_PK;
+	if (strF.Find(L"FX_AN") >= 0)
+		dwFlags |= FX_AN;
+	if (strF.Find(L"FX_UN") >= 0)
+		dwFlags |= FX_UN;
+	return dwFlags;
+}
+
+CString CSQLiteField::GetFlagsShort()
+{
+	CString s;
+	if (m_dwFlags & FX_NN)
+		s += 'N';
+	if (m_dwFlags & FX_PK)
+		s += 'P';
+	if (m_dwFlags & FX_AN)
+		s += 'A';
+	if (m_dwFlags & FX_UN)
+		s += 'U';
+	return s;
+}
+
 CString CSQLiteField::GetDef()
 {
 	ASSERT(m_strVarName.GetLength() > 2);
@@ -299,6 +420,14 @@ CString CSQLiteField::GetDef()
 CString CSQLiteField::GetFunction()
 {
 	return CSQLiteTypes::GetFktLine(m_nFktType, m_SqlName, m_strVarName, m_dwFlags);
+}
+
+void CSQLiteField::InitVarName()
+{
+	CString strName = m_SqlName;
+	strName.Replace(' ', '_');
+	strName.Replace(':', '_');
+	m_strVarName = L"m_" + strName;
 }
 
 CSQLiteTableInfo::CSQLiteTableInfo(CSQLiteDatabase* pdb)

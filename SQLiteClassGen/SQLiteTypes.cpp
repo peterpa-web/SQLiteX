@@ -2,8 +2,8 @@
 #include "SQLiteTypes.h"
 
 CSQLiteTypes::CTypeInt CSQLiteTypes::s_aTypes[s_nTypes] = {
-	{ 1, "__int64", "__int64",			"RFX_Int64",	FX_NN | FX_PK | FX_AN | FX_UN },
 	{ 1, "long",	"long",				"RFX_Long",		FX_NN | FX_PK | FX_AN | FX_UN },
+	{ 1, "__int64", "__int64",			"RFX_Int64",	FX_NN | FX_PK | FX_AN | FX_UN },
 	{ 1, "BOOL",	"BOOL",				"RFX_Bool",		FX_NN },
 	{ 1, "CTime", "CTime s >= 1970",	"RFX_Time",		FX_NN | FX_UN },
 	{ 1, "CTimeJava", "CTime ms >= 1970", "RFX_TimeJava", FX_NN | FX_UN },
@@ -17,6 +17,21 @@ CSQLiteTypes::CTypeInt CSQLiteTypes::s_aTypes[s_nTypes] = {
 
 WCHAR* CSQLiteTypes::s_aszSqlTypes[5] = { L"-", L"integer", L"real", L"text", L"blob" };
 
+void CSQLiteTypes::FillList(CListBox& list, int nSqlType, int nFktType)
+{
+	list.ResetContent();
+	for (int t = 0; t < s_nTypes; t++)
+	{
+		if (s_aTypes[t].m_nSqlType != nSqlType)
+			continue;
+		CString str(s_aTypes[t].m_pszDescr);
+		int n = list.AddString(str);
+		list.SetItemData(n, t);
+		if (t == nFktType)
+			list.SetCurSel(n);
+	}
+}
+/*
 void CSQLiteTypes::FillCombo(CComboBox& combo, int nSqlType, int nFktType)
 {
 	combo.ResetContent();
@@ -31,7 +46,7 @@ void CSQLiteTypes::FillCombo(CComboBox& combo, int nSqlType, int nFktType)
 			combo.SetCurSel(n);
 	}
 }
-
+*/
 CString CSQLiteTypes::GetDeclLine(int nType, const CString& strVarName)
 {
 	CString str(s_aTypes[nType].m_pszCppType);
@@ -108,4 +123,14 @@ int CSQLiteTypes::GetSqlType(const CString& strType)
 CString CSQLiteTypes::GetSqlType(int nType)
 {
 	return CString(s_aszSqlTypes[nType]);
+}
+
+int CSQLiteTypes::GetTypeByRfx(const CString& strRfx)
+{
+	for (int i = 0; i < s_nTypes; i++)
+	{
+		if (strRfx == s_aTypes[i].m_pszFunction)
+			return i;
+	}
+	return -1;
 }

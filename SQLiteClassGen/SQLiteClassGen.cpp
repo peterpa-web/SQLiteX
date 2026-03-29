@@ -66,20 +66,28 @@ BOOL CSQLiteClassGenApp::InitInstance()
 	// Ändern Sie den Registrierungsschlüssel, unter dem Ihre Einstellungen gespeichert sind.
 	// TODO: Ändern Sie diese Zeichenfolge entsprechend,
 	// z.B. zum Namen Ihrer Firma oder Organisation.
-	SetRegistryKey(_T("Vom lokalen Anwendungs-Assistenten generierte Anwendungen"));
-
+	SetRegistryKey(_T("Peter Pagel"));
+	CString strSection = _T("Start");
+	CString strEntryDB = _T("DB");
+	CString strEntryTarget = _T("Target");
 	CSQLiteClassGenDlg dlg;
+	dlg.m_strDbPath = GetProfileString(strSection, strEntryDB);
+	dlg.m_strTargetPath = GetProfileString(strSection, strEntryTarget);
 	m_pMainWnd = &dlg;
 	INT_PTR nResponse = dlg.DoModal();
 	if (nResponse == IDOK)
 	{
 		// TODO: Fügen Sie hier Code ein, um das Schließen des
 		//  Dialogfelds über "OK" zu steuern
+		WriteProfileString(strSection, strEntryDB, dlg.m_strDbPath);
+		WriteProfileString(strSection, strEntryTarget, dlg.m_strTargetPath);
 	}
 	else if (nResponse == IDCANCEL)
 	{
 		// TODO: Fügen Sie hier Code ein, um das Schließen des
 		//  Dialogfelds über "Abbrechen" zu steuern
+		WriteProfileString(strSection, strEntryDB, dlg.m_strDbPath);
+		WriteProfileString(strSection, strEntryTarget, dlg.m_strTargetPath);
 	}
 	else if (nResponse == -1)
 	{

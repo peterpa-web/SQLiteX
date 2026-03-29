@@ -13,7 +13,6 @@
 #define IDC_BUTTON_SEL_TARGET_PATH      1003
 #define IDC_LIST_TABLES                 1004
 #define IDC_LIST_FIELDS                 1005
-#define IDC_COMBO_FIELD_TYPE            1006
 #define IDC_CHECK_NN                    1007
 #define IDC_EDIT_CLASS_NAME             1008
 #define IDC_EDIT_FILE_NAME              1009
@@ -24,6 +23,8 @@
 #define IDC_BUTTON_REMOVE_CLASS         1014
 #define IDC_EDIT_FILE_NAME2             1015
 #define IDC_EDIT_VAR_NAME               1015
+#define IDC_LIST_TYPE                   1016
+#define IDC_BUTTON_DERIVE_CLASS         1017
 
 // Next default values for new objects
 // 
@@ -31,7 +32,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        130
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1011
+#define _APS_NEXT_CONTROL_VALUE         1017
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

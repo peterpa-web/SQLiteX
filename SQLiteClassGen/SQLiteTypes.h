@@ -5,7 +5,8 @@ class CSQLiteTypes
 {
 public:
 	static const int s_nTypes = 11;
-	static void FillCombo(CComboBox& combo, int nSqlType, int nFktType);
+//	static void FillCombo(CComboBox& combo, int nSqlType, int nFktType);
+	static void FillList(CListBox& list, int nSqlType, int nFktType);
 	static CString GetDeclLine(int nType, const CString& strVarName);
 	static CString GetFktLine(int nType, const CString& strSqlName, const CString& strVarName, DWORD dwFlags);
 	static int GetDefaultType(int nSqlType);
@@ -13,6 +14,8 @@ public:
 	static CString GetSqlType(int nType);
 	static LPCSTR GetDescr(int nType) { return s_aTypes[nType].m_pszDescr; }
 	static DWORD GetFlags(int nType) { return s_aTypes[nType].m_dwFlags; }
+	static int GetTypeByRfx(const CString& strRfx);
+	static int GetSqlTypeNo(int nType) { return s_aTypes[nType].m_nSqlType; }
 
 protected:
 	typedef struct {

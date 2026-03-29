@@ -1,6 +1,7 @@
 #pragma once
 #include "SQLiteRecordset.h"
 #include "SQLiteTypes.h"
+#include "OldClass.h"
 
 class CSQLiteTableInfo;
 
@@ -11,15 +12,27 @@ public:
 	CString m_SqlTypeRaw;
 	int m_nSqlType = 0;
 	int m_nFktType = -1;
+	int m_nFktTypeOld = -1;
 	DWORD m_dwFlags = 0;
+	DWORD m_dwFlagsOld = 0;
 	CString m_strVarName;
+	CString m_strVarNameOld;
+	DWORD m_dwModified = MOD_ALL;
+	static const int MOD_VAR = 1;
+	static const int MOD_TYPE = 2;
+	static const int MOD_FLAGS = 4;
+	static const int MOD_ALL = 7;
 
 	void SetDefaultType();
 	void SetFlags(const CString& strFlags);
+	static DWORD GetFlagsFromClass(const CString& strFlags);
 	CString GetSqlTypeString() { return CSQLiteTypes::GetSqlType(m_nSqlType); }
 	CString GetDescr() { return CString(CSQLiteTypes::GetDescr(m_nFktType)); }
+	CString GetFlagsShort();
 	CString GetDef();
 	CString GetFunction();
+//	void SetType(int nType) { m_nFktType = nType; }
+	void InitVarName();
 };
 
 class CSQLiteIndex
@@ -40,13 +53,25 @@ public:
 	CList<CSQLiteIndex> m_idx;
 	bool m_bView = false;
 	CString m_Sql;
+	COldClass m_OldClass;
+	DWORD m_dwModified = MOD_T_ALL;
+	static const int MOD_CLASS = 1;
+	static const int MOD_FILE = 2;
+	static const int MOD_COUNT = 4;
+	static const int MOD_T_ALL = 7;
 
 	void ParseFields(const CString& strFields);
 	void AddField(const CSQLiteTableInfo& ti);
+	void ResetFields();
 	void FillList(CListCtrl& list);
 	void GetDefs(CStringList& list);
 	void GetFunctions(CStringList& list);
 	CString GetConstraintsQuoted() { return m_strConstraintsQuoted; }
+	bool GetOldDefs(const CString& strTargetPath);
+//	CString GetOldClassName() { return m_OldClass.GetOldClassName(); }
+	void SetDefClassName();
+	void SetDerived() { m_OldClass.SetDerived(); }
+	bool IsModified();
 
 protected:
 	CString StripDeco(CString strName);
@@ -58,7 +83,7 @@ class CSQLiteSchema
 {
 public:
 	~CSQLiteSchema();
-	void ReadAll(const CString& strDbPath);
+	bool ReadAll(const CString& strDbPath);
 	CSQLiteTable* GetFirstTable() { 
 		m_posT = m_tables.GetHeadPosition(); 
 		return GetNextTable(); 
