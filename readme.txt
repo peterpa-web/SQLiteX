@@ -10,6 +10,8 @@ https://sqlite.org/download.html
 Additionally some helper classes are implementing Euro currency as long type and Date as
 long type where its decimal representation directly shows a readable date.
 
+Also provided is a source generator for creating MFC classes based on a given database and the previous version of the generated classes. 
+
 The provided MFC project SampleDlgApp shows most features of the wrapper. 
 Please feel free to extend it.
 
